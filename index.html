@@ -11,14 +11,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YM Final V1">
     <meta name="theme-color" content="#09090b">
-    <meta name="description" content="Ứng dụng quản lý ca làm, tăng ca và tính lương cá nhân chuyên nghiệp.">
+    <meta name="description" content="Quản lý ca làm, tăng ca và tính lương cá nhân chuyên nghiệp.">
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="YM Final V1 - Lịch Lương Cá Nhân">
-    <meta property="og:description" content="Quản lý thu nhập thông minh, chính xác cho công nhân viên.">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1580519542036-c47de6196ba5?q=80&w=1000&auto=format&fit=crop">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -35,58 +29,23 @@
             color: #fafafa;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
-            /* Tránh hiện tượng kéo xuống reload trên mobile */
             overscroll-behavior-y: contain;
         }
 
-        /* Smooth state transitions */
         * {
             transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 150ms;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #09090b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #27272a;
-            border-radius: 10px;
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
 
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Glass effect */
-        .glass {
-            background: rgba(24, 24, 27, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-
-        /* Safe area for iPhones with Notch */
-        .safe-pb {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 <script type="importmap">
 {
@@ -100,5 +59,6 @@
 </head>
 <body>
     <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>

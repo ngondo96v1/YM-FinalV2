@@ -18,19 +18,16 @@ import StatsSection from './components/StatsSection';
 import SalaryHeader from './components/SalaryHeader';
 import AuthModal from './components/AuthModal';
 
-const STORAGE_KEY = 'ym_final_v1_data';
-const USER_KEY = 'ym_final_v1_user';
+const STORAGE_KEY = 'ym_final_v1_data_prod';
+const USER_KEY = 'ym_final_v1_user_prod';
 
 const App: React.FC = () => {
-  // 1. Quản lý chu kỳ hiển thị
   const [currentViewDate, setCurrentViewDate] = useState(() => {
     const d = new Date();
-    // Nếu hôm nay > 27, mặc định xem chu kỳ tiếp theo
     if (d.getDate() > 27) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   
-  // 2. Quản lý người dùng
   const [user, setUser] = useState<{ name: string } | null>(() => {
     try {
       const savedUser = localStorage.getItem(USER_KEY);
@@ -38,7 +35,6 @@ const App: React.FC = () => {
     } catch { return null; }
   });
 
-  // 3. States chính của App
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>({
     baseSalary: 0,
     standardWorkDays: 26,
@@ -49,7 +45,6 @@ const App: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // Load dữ liệu từ LocalStorage khi khởi động
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -59,25 +54,22 @@ const App: React.FC = () => {
         if (parsed.allowances) setAllowances(parsed.allowances);
         if (parsed.daysData) setDaysData(parsed.daysData);
       } catch (e) {
-        console.error("Lỗi khôi phục dữ liệu:", e);
+        console.error("Data restore failed:", e);
       }
     }
     setIsDataLoaded(true);
   }, []);
 
-  // Lưu dữ liệu tự động khi có thay đổi
   useEffect(() => {
     if (isDataLoaded && user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ salaryConfig, allowances, daysData }));
     }
   }, [salaryConfig, allowances, daysData, user, isDataLoaded]);
 
-  // Tính toán tổng phụ cấp đang bật
   const activeAllowancesTotal = useMemo(() => 
     allowances.reduce((acc, curr) => curr.isActive ? acc + curr.amount : acc, 0)
   , [allowances]);
 
-  // Tính toán bảng lương
   const summary = useMemo(() => 
     calculatePayroll(
       daysData, 
@@ -88,7 +80,6 @@ const App: React.FC = () => {
     )
   , [daysData, salaryConfig, activeAllowancesTotal, currentViewDate]);
 
-  // Event handlers
   const handleDayClick = useCallback((date: Date) => {
     const dateStr = toDateKey(date);
     const existing = daysData.find(d => d.date === dateStr);
@@ -105,7 +96,6 @@ const App: React.FC = () => {
   const handleSaveDay = useCallback((updated: DayData) => {
     setDaysData(prev => {
       const filtered = prev.filter(d => d.date !== updated.date);
-      // Nếu ngày đó trống hoàn toàn thì không cần lưu vào array
       if (updated.shift === ShiftType.NONE && 
           updated.leave === LeaveType.NONE && 
           updated.overtimeHours === 0 && 
@@ -123,7 +113,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ym-final-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `ym-final-v1-backup.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -138,19 +128,18 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    if(confirm("Dữ liệu của bạn được lưu an toàn trên máy này. Bạn có muốn đăng xuất?")) {
+    if(confirm("Dữ liệu được lưu tại máy này. Bạn có muốn đăng xuất?")) {
         setUser(null);
         localStorage.removeItem(USER_KEY);
     }
   };
 
-  // Màn hình đăng nhập nếu chưa có user
   if (!user) {
     return <AuthModal onClose={() => {}} onLogin={handleLogin} isForced={true} />;
   }
 
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-24 relative overflow-x-hidden selection:bg-orange-500/30">
+    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-24 relative overflow-x-hidden">
       <SalaryHeader 
         config={salaryConfig} 
         onUpdate={handleUpdateSalary} 
@@ -187,10 +176,10 @@ const App: React.FC = () => {
         <div className="px-5 mt-10">
             <button 
                 onClick={handleExportData}
-                className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-3 group hover:border-zinc-700 active:scale-95 transition-all"
+                className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-3 group active:scale-95 transition-all"
             >
                 <i className="fa-solid fa-cloud-arrow-down text-zinc-600 group-hover:text-orange-500"></i>
-                <span className="text-[10px] font-black text-zinc-500 group-hover:text-zinc-300 uppercase tracking-widest">Sao lưu dữ liệu máy (JSON)</span>
+                <span className="text-[10px] font-black text-zinc-500 group-hover:text-zinc-300 uppercase tracking-widest">Sao lưu JSON</span>
             </button>
         </div>
       </main>
@@ -214,10 +203,6 @@ const App: React.FC = () => {
           onSave={handleSaveDay}
         />
       )}
-      
-      {/* Background Decor */}
-      <div className="fixed top-1/4 -left-20 w-64 h-64 bg-orange-500/5 blur-[100px] pointer-events-none rounded-full"></div>
-      <div className="fixed bottom-1/4 -right-20 w-64 h-64 bg-amber-500/5 blur-[100px] pointer-events-none rounded-full"></div>
     </div>
   );
 };
