@@ -26,14 +26,22 @@ export const toDateKey = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-/**
- * Lấy chính xác chu kỳ lương:
- * Từ 21 tháng trước (targetMonth - 1) đến 27 tháng này (targetMonth)
- */
 export const getPayrollRange = (targetYear: number, targetMonth: number) => {
   const startDate = new Date(targetYear, targetMonth - 1, 21, 0, 0, 0);
   const endDate = new Date(targetYear, targetMonth, 27, 23, 59, 59);
   return { startDate, endDate };
+};
+
+// Hàm tính thuế TNCN lũy tiến (2024)
+const calculatePIT = (taxableAmount: number): number => {
+  if (taxableAmount <= 0) return 0;
+  if (taxableAmount <= 5000000) return taxableAmount * 0.05;
+  if (taxableAmount <= 10000000) return taxableAmount * 0.1 - 250000;
+  if (taxableAmount <= 18000000) return taxableAmount * 0.15 - 750000;
+  if (taxableAmount <= 32000000) return taxableAmount * 0.2 - 1650000;
+  if (taxableAmount <= 52000000) return taxableAmount * 0.25 - 3250000;
+  if (taxableAmount <= 80000000) return taxableAmount * 0.3 - 5850000;
+  return taxableAmount * 0.35 - 9850000;
 };
 
 export const calculatePayroll = (
@@ -44,7 +52,6 @@ export const calculatePayroll = (
   targetYear: number
 ): PayrollSummary => {
   const { startDate, endDate } = getPayrollRange(targetYear, targetMonth);
-
   const dailyRate = config.standardWorkDays > 0 ? config.baseSalary / config.standardWorkDays : 0;
   const hourlyRate = dailyRate / 8;
 
@@ -54,7 +61,6 @@ export const calculatePayroll = (
   });
 
   let totalWorkDays = 0;
-  let totalOTHours = 0;
   let otAmountNormal = 0, otAmountSunday = 0, otAmountHolidayX2 = 0, otAmountHolidayX3 = 0;
   let otHoursNormal = 0, otHoursSunday = 0, otHoursHolidayX2 = 0, otHoursHolidayX3 = 0;
 
@@ -71,7 +77,6 @@ export const calculatePayroll = (
     }
 
     if (day.overtimeHours > 0) {
-      totalOTHours += day.overtimeHours;
       if (day.isHoliday) {
         const first8 = Math.min(day.overtimeHours, 8);
         const extra = Math.max(0, day.overtimeHours - 8);
@@ -91,11 +96,26 @@ export const calculatePayroll = (
 
   const baseIncome = Math.round(totalWorkDays * dailyRate);
   const otIncome = Math.round(otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3);
-  const totalIncome = baseIncome + otIncome + Math.round(allowances);
+  const grossIncome = baseIncome + otIncome + Math.round(allowances);
+
+  // 1. Tính Bảo hiểm (10.5% trên lương đóng bảo hiểm hoặc lương cơ bản)
+  const insSalary = config.insuranceSalary || config.baseSalary;
+  const insuranceDeduction = Math.round(insSalary * 0.105);
+
+  // 2. Thu nhập chịu thuế = Gross - Bảo hiểm
+  const incomeAfterInsurance = grossIncome - insuranceDeduction;
+
+  // 3. Thu nhập tính thuế = Thu nhập chịu thuế - Giảm trừ gia cảnh bản thân (11tr)
+  // (Giả định chưa có người phụ thuộc)
+  const taxableIncome = Math.max(0, incomeAfterInsurance - 11000000);
+  const personalTax = Math.round(calculatePIT(taxableIncome));
+
+  // 4. Thực nhận (Net)
+  const netIncome = grossIncome - insuranceDeduction - personalTax;
 
   return {
     totalWorkDays,
-    totalOTHours,
+    totalOTHours: otHoursNormal + otHoursSunday + otHoursHolidayX2 + otHoursHolidayX3,
     otHoursNormal, otHoursSunday, otHoursHolidayX2, otHoursHolidayX3,
     otAmountNormal: Math.round(otAmountNormal),
     otAmountSunday: Math.round(otAmountSunday),
@@ -104,7 +124,11 @@ export const calculatePayroll = (
     totalAllowances: Math.round(allowances),
     otIncome,
     baseIncome,
-    totalIncome,
+    grossIncome,
+    insuranceDeduction,
+    taxableIncome,
+    personalTax,
+    netIncome,
     dailyRate: Math.round(dailyRate),
     hourlyRate: Math.round(hourlyRate)
   };

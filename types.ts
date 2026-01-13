@@ -29,7 +29,8 @@ export interface Allowance {
 
 export interface SalaryConfig {
   baseSalary: number;
-  standardWorkDays: number; // usually 26
+  standardWorkDays: number;
+  insuranceSalary?: number; // Lương đóng bảo hiểm (nếu khác lương cơ bản)
 }
 
 export interface PayrollSummary {
@@ -39,7 +40,6 @@ export interface PayrollSummary {
   otHoursSunday: number;
   otHoursHolidayX2: number;
   otHoursHolidayX3: number;
-  // Chi tiết số tiền
   otAmountNormal: number;
   otAmountSunday: number;
   otAmountHolidayX2: number;
@@ -47,7 +47,11 @@ export interface PayrollSummary {
   totalAllowances: number;
   otIncome: number;
   baseIncome: number;
-  totalIncome: number;
+  grossIncome: number; // Tổng thu nhập trước thuế/bh
+  insuranceDeduction: number; // Khoản trừ bảo hiểm (10.5%)
+  taxableIncome: number; // Thu nhập tính thuế
+  personalTax: number; // Thuế TNCN
+  netIncome: number; // Thực nhận cuối cùng
   dailyRate: number;
   hourlyRate: number;
 }
