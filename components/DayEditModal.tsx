@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DayData, ShiftType, LeaveType } from '../types';
 
 interface Props {
@@ -9,7 +9,13 @@ interface Props {
 }
 
 const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
-  const [data, setData] = useState<DayData>({ ...day });
+  // Ưu tiên chọn Ca Ngày nếu ngày này đang trống dữ liệu hoàn toàn
+  const [data, setData] = useState<DayData>(() => {
+    if (day.shift === ShiftType.NONE && day.leave === LeaveType.NONE && day.overtimeHours === 0) {
+      return { ...day, shift: ShiftType.DAY };
+    }
+    return { ...day };
+  });
 
   const dateObj = new Date(day.date + 'T00:00:00');
   const dateFormatted = dateObj.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
@@ -50,7 +56,7 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
           {/* Shift Grid */}
           <section>
             <p className="text-[11px] text-zinc-500 font-black uppercase tracking-widest mb-4 px-1 flex items-center">
-                <i className="fa-solid fa-clock-rotate-left mr-2 opacity-50"></i> CA LÀM VIỆC
+                <i className="fa-solid fa-clock-rotate-left mr-2 opacity-50"></i> CHỌN CA LÀM (ƯU TIÊN CA NGÀY)
             </p>
             <div className="grid grid-cols-3 gap-3">
               {[
