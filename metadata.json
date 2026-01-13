@@ -1,0 +1,5 @@
+{
+  "name": "YM Final V2",
+  "description": "A streamlined personal salary tracker designed for shift workers. Manage shifts, overtime, and allowances in a single-page calendar dashboard with automated wage calculations.",
+  "requestFramePermissions": []
+}
