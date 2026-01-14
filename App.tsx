@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   DayData, 
   SalaryConfig, 
@@ -22,10 +22,11 @@ const STORAGE_KEY = 'ym_final_v1_data_prod';
 const USER_KEY = 'ym_final_v1_user_prod';
 
 const App: React.FC = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   // State quản lý ngày đang xem trên lịch
   const [currentViewDate, setCurrentViewDate] = useState(() => {
     const d = new Date();
-    // Nếu hôm nay > 27, chu kỳ lương tiếp theo đã bắt đầu, mặc định xem tháng sau
     if (d.getDate() > 27) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
@@ -75,7 +76,6 @@ const App: React.FC = () => {
     allowances.reduce((acc, curr) => curr.isActive ? acc + (Number(curr.amount) || 0) : acc, 0)
   , [allowances]);
 
-  // TÍNH TOÁN LẠI MỖI KHI DỮ LIỆU THAY ĐỔI
   const summary = useMemo(() => {
     return calculatePayroll(
       daysData, 
@@ -102,7 +102,6 @@ const App: React.FC = () => {
   const handleSaveDay = useCallback((updated: DayData) => {
     setDaysData(prev => {
       const filtered = prev.filter(d => d.date !== updated.date);
-      // Chỉ lưu nếu ngày có dữ liệu thực tế
       if (updated.shift === ShiftType.NONE && 
           updated.leave === LeaveType.NONE && 
           updated.overtimeHours === 0 && 
@@ -137,9 +136,36 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ym-money-backup.json`;
+    link.download = `ym-money-backup-${new Date().toLocaleDateString('vi-VN')}.json`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json.salaryConfig && json.daysData) {
+          if (window.confirm("Dữ liệu mới sẽ ghi đè lên dữ liệu hiện tại. Bạn chắc chắn chứ?")) {
+            setSalaryConfig(json.salaryConfig);
+            setAllowances(json.allowances || []);
+            setDaysData(json.daysData);
+            alert("Đồng bộ dữ liệu thành công!");
+          }
+        } else {
+          alert("File không đúng định dạng sao lưu của YM Money.");
+        }
+      } catch (err) {
+        alert("Lỗi khi đọc file. Vui lòng thử lại.");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input value to allow selecting the same file again if needed
+    e.target.value = "";
   };
 
   if (!user) {
@@ -185,7 +211,21 @@ const App: React.FC = () => {
           onSetAll={(val) => setAllowances(prev => prev.map(a => ({ ...a, isActive: val })))}
         />
 
-        <div className="px-5 mt-10">
+        <div className="px-5 mt-10 grid grid-cols-2 gap-4">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImportData} 
+              accept=".json" 
+              className="hidden" 
+            />
+            <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-3 group active:scale-95 transition-all"
+            >
+                <i className="fa-solid fa-cloud-arrow-up text-zinc-600 group-hover:text-blue-500"></i>
+                <span className="text-[10px] font-black text-zinc-500 group-hover:text-zinc-300 uppercase tracking-widest">Nhập Dữ liệu</span>
+            </button>
             <button 
                 onClick={handleExportData}
                 className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-3 group active:scale-95 transition-all"
