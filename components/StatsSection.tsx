@@ -12,7 +12,7 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
 
   return (
     <div className="px-5 mt-6 space-y-5">
-      {/* Net Income Display (Thực nhận) */}
+      {/* Net Income Display */}
       <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-8 rounded-[3rem] shadow-2xl border border-zinc-800 relative overflow-hidden group">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/5 rounded-full blur-[60px]"></div>
         
@@ -21,7 +21,7 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
                 <i className="fa-solid fa-hand-holding-dollar text-[10px] text-orange-500"></i>
                 <p className="text-orange-500 font-black text-[9px] uppercase tracking-widest">Thực nhận (Net)</p>
             </div>
-            <h3 className="text-5xl font-black text-white tracking-tighter mb-1">{formatCurrency(summary.netIncome)}</h3>
+            <h3 className="text-5xl font-black text-white tracking-tighter mb-1 animate-in fade-in zoom-in duration-500">{formatCurrency(summary.netIncome)}</h3>
             <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Sau khi trừ BH & Thuế</p>
             
             <div className="mt-8 grid grid-cols-3 gap-2 border-t border-zinc-800 pt-6">
@@ -34,14 +34,15 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
                   <span className="text-rose-500 text-xs font-black">-{formatCurrency(summary.insuranceDeduction)}</span>
                </div>
                <div className="flex flex-col">
-                  <span className="text-zinc-600 text-[8px] uppercase font-black mb-1">Thuế TNCN</span>
+                  <span className="text-zinc-600 text-[8px] uppercase font-black mb-1">Thuế TNCN *</span>
                   <span className="text-rose-500 text-xs font-black">-{formatCurrency(summary.personalTax)}</span>
                </div>
             </div>
+            <p className="text-[7px] text-zinc-700 font-bold uppercase mt-3 tracking-widest">(*) Đã trừ phần tăng ca miễn thuế cho công nhân</p>
         </div>
       </div>
 
-      {/* Quick Summary Grid */}
+      {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-zinc-900 p-5 rounded-[2rem] border border-zinc-800 flex items-center space-x-4">
            <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500">
@@ -64,7 +65,7 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
         </div>
       </div>
 
-      {/* Detailed Toggle */}
+      {/* Detailed View Toggle */}
       <div className={`bg-zinc-900 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${isDetailed ? 'border-orange-500/30' : 'border-zinc-800'}`}>
           <button onClick={() => setIsDetailed(!isDetailed)} className="w-full p-6 flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -79,87 +80,90 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
             <i className={`fa-solid fa-chevron-down text-zinc-600 transition-transform ${isDetailed ? 'rotate-180' : ''}`}></i>
           </button>
           
-          <div className={`transition-all duration-500 ${isDetailed ? 'max-h-[1500px] opacity-100 p-6 pt-0' : 'max-h-0 opacity-0'}`}>
+          <div className={`transition-all duration-500 ${isDetailed ? 'max-h-[2000px] opacity-100 p-6 pt-0' : 'max-h-0 opacity-0'}`}>
             <div className="space-y-6">
                 <div className="h-px bg-zinc-800/50"></div>
                 
-                {/* Thu nhập cơ bản & Phụ cấp */}
                 <div className="space-y-3">
                     <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest px-1">Lương & Phụ cấp</p>
                     <div className="grid gap-2">
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
-                            <span className="text-[11px] text-zinc-400 font-black uppercase">Lương công ({summary.totalWorkDays} ngày)</span>
+                            <span className="text-[11px] text-zinc-400 font-black uppercase">Lương ngày công ({summary.totalWorkDays}N)</span>
                             <span className="text-sm font-black text-white">{formatCurrency(summary.baseIncome)}</span>
                         </div>
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
-                            <span className="text-[11px] text-zinc-400 font-black uppercase">Phụ cấp</span>
+                            <span className="text-[11px] text-zinc-400 font-black uppercase">Phụ cấp tổng</span>
                             <span className="text-sm font-black text-white">{formatCurrency(summary.totalAllowances)}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Chi tiết Tăng ca */}
                 <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
                         <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest">Chi tiết tăng ca</p>
                         <span className="text-[10px] font-black text-orange-500">{formatCurrency(summary.otIncome)}</span>
                     </div>
                     <div className="grid gap-2">
-                        {/* Tăng ca ngày thường */}
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
                             <div className="flex flex-col">
                                 <span className="text-[11px] text-zinc-400 font-black uppercase">Ngày thường (x1.5)</span>
-                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursNormal} giờ làm thêm</span>
+                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursNormal} giờ</span>
                             </div>
                             <span className="text-sm font-black text-white">{formatCurrency(summary.otAmountNormal)}</span>
                         </div>
+
+                        <div className={`flex justify-between p-4 rounded-2xl border transition-all ${summary.otHoursNightExtra > 0 ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'bg-zinc-950/40 border-zinc-800 opacity-60'}`}>
+                            <div className="flex flex-col">
+                                <span className={`text-[11px] font-black uppercase ${summary.otHoursNightExtra > 0 ? 'text-indigo-400' : 'text-zinc-500'}`}>
+                                  <i className="fa-solid fa-moon mr-1"></i> Tăng ca đêm (x1.8)
+                                </span>
+                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursNightExtra} giờ (Vượt mức x0.3)</span>
+                            </div>
+                            <span className={`text-sm font-black ${summary.otHoursNightExtra > 0 ? 'text-indigo-400' : 'text-zinc-700'}`}>{formatCurrency(summary.otAmountNightExtra)}</span>
+                        </div>
                         
-                        {/* Tăng ca Chủ nhật */}
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
                             <div className="flex flex-col">
                                 <span className="text-[11px] text-zinc-400 font-black uppercase">Chủ nhật (x2.0)</span>
-                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursSunday} giờ làm thêm</span>
+                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursSunday} giờ</span>
                             </div>
                             <span className="text-sm font-black text-white">{formatCurrency(summary.otAmountSunday)}</span>
                         </div>
 
-                        {/* Tăng ca Ngày lễ x2.0 */}
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
                             <div className="flex flex-col">
-                                <span className="text-[11px] text-zinc-400 font-black uppercase">Lễ - 8h đầu (x2.0)</span>
-                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursHolidayX2} giờ làm thêm</span>
+                                <span className="text-[11px] text-zinc-400 font-black uppercase">Lễ/Tết - 8h đầu (x2.0)</span>
+                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursHolidayX2} giờ</span>
                             </div>
                             <span className="text-sm font-black text-white">{formatCurrency(summary.otAmountHolidayX2)}</span>
                         </div>
 
-                        {/* Tăng ca Ngày lễ x3.0 */}
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
                             <div className="flex flex-col">
-                                <span className="text-[11px] text-zinc-400 font-black uppercase">Lễ - Ngoài 8h (x3.0)</span>
-                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursHolidayX3} giờ làm thêm</span>
+                                <span className="text-[11px] text-zinc-400 font-black uppercase">Lễ/Tết - Ngoài 8h (x3.0)</span>
+                                <span className="text-[9px] text-zinc-600 font-bold uppercase">{summary.otHoursHolidayX3} giờ</span>
                             </div>
                             <span className="text-sm font-black text-white">{formatCurrency(summary.otAmountHolidayX3)}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Khoản khấu trừ */}
                 <div className="space-y-3">
-                    <p className="text-[10px] text-rose-500/80 font-black uppercase tracking-widest px-1">Khoản trừ</p>
+                    <p className="text-[10px] text-rose-500/80 font-black uppercase tracking-widest px-1">Khấu trừ</p>
                     <div className="grid gap-2">
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-rose-500/10">
                             <span className="text-[11px] text-zinc-500 font-black uppercase">Bảo hiểm (10.5%)</span>
                             <span className="text-sm font-black text-rose-500">-{formatCurrency(summary.insuranceDeduction)}</span>
                         </div>
                         <div className="flex justify-between p-4 bg-zinc-950/40 rounded-2xl border border-rose-500/10">
-                            <span className="text-[11px] text-zinc-500 font-black uppercase">Thuế TNCN lũy tiến</span>
+                            <span className="text-[11px] text-zinc-500 font-black uppercase">Thuế TNCN tạm tính</span>
                             <span className="text-sm font-black text-rose-500">-{formatCurrency(summary.personalTax)}</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="bg-orange-500 p-5 rounded-[2rem] flex justify-between items-center shadow-xl shadow-orange-500/10">
-                    <span className="text-[10px] text-zinc-950 font-black uppercase tracking-[0.2em]">Thực nhận tháng này</span>
+                    <span className="text-[10px] text-zinc-950 font-black uppercase tracking-[0.2em]">Net Thực nhận</span>
                     <span className="text-xl font-black text-zinc-950">{formatCurrency(summary.netIncome)}</span>
                 </div>
             </div>

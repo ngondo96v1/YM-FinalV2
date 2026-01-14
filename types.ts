@@ -40,10 +40,12 @@ export interface PayrollSummary {
   otHoursSunday: number;
   otHoursHolidayX2: number;
   otHoursHolidayX3: number;
+  otHoursNightExtra: number; // Số giờ tăng ca đêm (sau 8h ca đêm)
   otAmountNormal: number;
   otAmountSunday: number;
   otAmountHolidayX2: number;
   otAmountHolidayX3: number;
+  otAmountNightExtra: number; // Tiền tăng ca đêm (x1.8)
   totalAllowances: number;
   otIncome: number;
   baseIncome: number;

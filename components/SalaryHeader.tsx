@@ -39,6 +39,13 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
     }
   };
 
+  // Hàm click logout rõ ràng
+  const handleLogoutClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowProfileMenu(false);
+    onLogout();
+  };
+
   return (
     <div className="bg-zinc-950/80 backdrop-blur-xl pt-10 pb-6 px-5 rounded-b-[2.5rem] shadow-2xl border-b border-zinc-800/50 sticky top-0 z-50">
       <div className="flex items-center justify-between mb-8">
@@ -55,7 +62,10 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
         <div className="flex items-center space-x-3">
           {user && (
             <div className="relative">
-              <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="flex items-center space-x-2 bg-zinc-900 py-1.5 pl-1.5 pr-3 rounded-2xl border border-zinc-800 active:scale-95 transition-all">
+              <button 
+                onClick={() => setShowProfileMenu(!showProfileMenu)} 
+                className="flex items-center space-x-2 bg-zinc-900 py-1.5 pl-1.5 pr-3 rounded-2xl border border-zinc-800 active:scale-95 transition-all"
+              >
                 <div className="w-7 h-7 bg-gradient-to-tr from-orange-500 to-amber-400 rounded-xl flex items-center justify-center text-xs font-black text-zinc-950">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
@@ -64,9 +74,13 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
               
               {showProfileMenu && (
                 <>
-                  <div className="fixed inset-0 z-[-1]" onClick={() => setShowProfileMenu(false)}></div>
-                  <div className="absolute right-0 mt-3 w-48 bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200">
-                    <button onClick={() => { onLogout(); setShowProfileMenu(false); }} className="w-full flex items-center space-x-3 p-3 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors">
+                  <div className="fixed inset-0 z-[100]" onClick={() => setShowProfileMenu(false)}></div>
+                  <div className="absolute right-0 mt-3 w-48 bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200 z-[101]">
+                    <button 
+                      type="button"
+                      onClick={handleLogoutClick} 
+                      className="w-full flex items-center space-x-3 p-3 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors text-left"
+                    >
                       <i className="fa-solid fa-right-from-bracket text-xs"></i>
                       <span className="text-[10px] font-bold uppercase tracking-widest">Đăng xuất</span>
                     </button>

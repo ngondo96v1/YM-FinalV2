@@ -22,8 +22,10 @@ const STORAGE_KEY = 'ym_final_v1_data_prod';
 const USER_KEY = 'ym_final_v1_user_prod';
 
 const App: React.FC = () => {
+  // State quản lý ngày đang xem trên lịch
   const [currentViewDate, setCurrentViewDate] = useState(() => {
     const d = new Date();
+    // Nếu hôm nay > 27, chu kỳ lương tiếp theo đã bắt đầu, mặc định xem tháng sau
     if (d.getDate() > 27) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
@@ -38,7 +40,9 @@ const App: React.FC = () => {
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>({
     baseSalary: 0,
     standardWorkDays: 26,
+    insuranceSalary: 0
   });
+  
   const [allowances, setAllowances] = useState<Allowance[]>([]);
   const [daysData, setDaysData] = useState<DayData[]>([]);
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
@@ -61,24 +65,26 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isDataLoaded && user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ salaryConfig, allowances, daysData }));
+    if (isDataLoaded) {
+      const dataToSave = { salaryConfig, allowances, daysData };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     }
-  }, [salaryConfig, allowances, daysData, user, isDataLoaded]);
+  }, [salaryConfig, allowances, daysData, isDataLoaded]);
 
   const activeAllowancesTotal = useMemo(() => 
-    allowances.reduce((acc, curr) => curr.isActive ? acc + curr.amount : acc, 0)
+    allowances.reduce((acc, curr) => curr.isActive ? acc + (Number(curr.amount) || 0) : acc, 0)
   , [allowances]);
 
-  const summary = useMemo(() => 
-    calculatePayroll(
+  // TÍNH TOÁN LẠI MỖI KHI DỮ LIỆU THAY ĐỔI
+  const summary = useMemo(() => {
+    return calculatePayroll(
       daysData, 
       salaryConfig, 
       activeAllowancesTotal, 
-      currentViewDate.getMonth(), 
+      currentViewDate.getMonth() + 1, 
       currentViewDate.getFullYear()
-    )
-  , [daysData, salaryConfig, activeAllowancesTotal, currentViewDate]);
+    );
+  }, [daysData, salaryConfig, activeAllowancesTotal, currentViewDate]);
 
   const handleDayClick = useCallback((date: Date) => {
     const dateStr = toDateKey(date);
@@ -96,6 +102,7 @@ const App: React.FC = () => {
   const handleSaveDay = useCallback((updated: DayData) => {
     setDaysData(prev => {
       const filtered = prev.filter(d => d.date !== updated.date);
+      // Chỉ lưu nếu ngày có dữ liệu thực tế
       if (updated.shift === ShiftType.NONE && 
           updated.leave === LeaveType.NONE && 
           updated.overtimeHours === 0 && 
@@ -107,35 +114,40 @@ const App: React.FC = () => {
     setIsEditModalOpen(false);
   }, []);
 
+  const handleUpdateSalary = useCallback((field: keyof SalaryConfig, value: number) => {
+    setSalaryConfig(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleLogin = (name: string) => {
+    const newUser = { name };
+    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
+  const handleLogout = useCallback(() => {
+    if (window.confirm("Dữ liệu chấm công của bạn vẫn sẽ được lưu tại trình duyệt này. Bạn có muốn đăng xuất?")) {
+      localStorage.removeItem(USER_KEY);
+      setUser(null);
+    }
+  }, []);
+
   const handleExportData = () => {
     const dataStr = JSON.stringify({ salaryConfig, allowances, daysData }, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ym-final-v1-backup.json`;
+    link.download = `ym-money-backup.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleUpdateSalary = useCallback((field: keyof SalaryConfig, value: number) => {
-    setSalaryConfig(prev => ({ ...prev, [field]: value }));
-  }, []);
-
-  const handleLogin = (name: string) => {
-    setUser({ name });
-    localStorage.setItem(USER_KEY, JSON.stringify({ name }));
-  };
-
-  const handleLogout = () => {
-    if(confirm("Dữ liệu được lưu tại máy này. Bạn có muốn đăng xuất?")) {
-        setUser(null);
-        localStorage.removeItem(USER_KEY);
-    }
-  };
-
   if (!user) {
-    return <AuthModal onClose={() => {}} onLogin={handleLogin} isForced={true} />;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <AuthModal onClose={() => {}} onLogin={handleLogin} isForced={true} />
+      </div>
+    );
   }
 
   return (
@@ -191,7 +203,7 @@ const App: React.FC = () => {
             <i className="fa-solid fa-bolt-lightning text-lg"></i>
         </div>
         <div>
-            <p className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.3em]">YM Final V1 &bull; Personal Finance</p>
+            <p className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.3em]">YM Money &bull; Personal Salary</p>
             <p className="text-zinc-700 text-[8px] font-bold mt-1 tracking-widest uppercase">Privacy First &bull; No Backend &copy; 2024</p>
         </div>
       </footer>
