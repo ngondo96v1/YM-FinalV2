@@ -91,23 +91,39 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div onClick={() => startEdit('insuranceSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[90px] ${isEditing === 'insuranceSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-          <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Lương đóng Bảo hiểm</p>
-          {isEditing === 'insuranceSalary' ? (
-            <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
+      <div className="space-y-3">
+        {/* Lương Cơ Bản - Chiếm full width hàng trên */}
+        <div onClick={() => startEdit('baseSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[90px] ${isEditing === 'baseSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
+          <div className="flex justify-between items-center">
+            <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Lương Cơ Bản (Tính thu nhập)</p>
+            <i className="fa-solid fa-pen text-[8px] text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+          </div>
+          {isEditing === 'baseSalary' ? (
+            <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-2xl font-black text-orange-500 outline-none" />
           ) : (
-            <p className="text-lg font-black text-white truncate">{formatCurrency(config.insuranceSalary || 0)}</p>
+            <p className="text-2xl font-black text-white truncate">{formatCurrency(config.baseSalary || 0)}</p>
           )}
         </div>
 
-        <div onClick={() => startEdit('standardWorkDays')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[90px] ${isEditing === 'standardWorkDays' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-          <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Ngày Công chuẩn</p>
-          {isEditing === 'standardWorkDays' ? (
-            <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
-          ) : (
-            <p className="text-lg font-black text-white">{config.standardWorkDays} <span className="text-[10px] text-zinc-600">NGÀY</span></p>
-          )}
+        {/* Hàng dưới - Lương BH và Công chuẩn */}
+        <div className="grid grid-cols-2 gap-3">
+            <div onClick={() => startEdit('insuranceSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[80px] ${isEditing === 'insuranceSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
+                <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Lương đóng BH</p>
+                {isEditing === 'insuranceSalary' ? (
+                    <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
+                ) : (
+                    <p className="text-lg font-black text-zinc-300 truncate">{formatCurrency(config.insuranceSalary || 0)}</p>
+                )}
+            </div>
+
+            <div onClick={() => startEdit('standardWorkDays')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[80px] ${isEditing === 'standardWorkDays' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
+                <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Ngày Công chuẩn</p>
+                {isEditing === 'standardWorkDays' ? (
+                    <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
+                ) : (
+                    <p className="text-lg font-black text-white">{config.standardWorkDays} <span className="text-[10px] text-zinc-600">NGÀY</span></p>
+                )}
+            </div>
         </div>
       </div>
     </div>

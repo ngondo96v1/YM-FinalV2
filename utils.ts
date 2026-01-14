@@ -50,8 +50,8 @@ export const calculatePayroll = (
   targetMonth: number,
   targetYear: number
 ): PayrollSummary => {
-  // Sử dụng lương đóng bảo hiểm làm gốc để tính đơn giá ngày/giờ nếu lương gross không có
-  const baseSalary = config.insuranceSalary || config.baseSalary || 0;
+  // 1. Tính đơn giá dựa trên LƯƠNG CƠ BẢN
+  const baseSalary = Number(config.baseSalary) || 0;
   const standardDays = Number(config.standardWorkDays) || 26;
   const dailyRate = standardDays > 0 ? baseSalary / standardDays : 0;
   const hourlyRate = dailyRate / 8;
@@ -72,7 +72,6 @@ export const calculatePayroll = (
     const dateObj = new Date(day.date + 'T00:00:00');
     const isSunday = dateObj.getDay() === 0;
 
-    // 1. Tính công gốc (8h đầu tiên)
     if (day.leave === LeaveType.PAID) {
       totalWorkDays += 1;
     } else if (day.shift !== ShiftType.NONE) {
@@ -81,7 +80,6 @@ export const calculatePayroll = (
       }
     }
 
-    // 2. Tính Tăng ca (Phần giờ làm thêm sau 8h công gốc)
     const hours = parseFloat(day.overtimeHours?.toString() || "0") || 0;
     if (hours > 0) {
       if (day.isHoliday) {
@@ -98,24 +96,15 @@ export const calculatePayroll = (
         otAmountSunday += (hours * hourlyRate * 2.0);
         taxExemptOTIncome += (hours * hourlyRate * 1.0);
       } else {
-        // NGÀY THƯỜNG (Ca Ngày hoặc Ca Đêm đồng nhất công thức)
-        // Giai đoạn 1: Giờ OT từ 1-8 (Hệ số x1.5)
-        // Giai đoạn 2: Giờ OT từ 9 trở đi (Hệ số x1.8 = 1.5 + 0.3)
         const otPhase1 = Math.min(hours, 8); 
         const otPhase2 = Math.max(0, hours - 8);
-
         otHoursNormal += hours;
-        
-        // Tiền Phase 1 (x1.5)
         otAmountNormal += (otPhase1 * hourlyRate * 1.5);
         taxExemptOTIncome += (otPhase1 * hourlyRate * 0.5);
-
-        // Tiền Phase 2 (x1.8)
         if (otPhase2 > 0) {
           otHoursNightExtra += otPhase2;
           otAmountNormal += (otPhase2 * hourlyRate * 1.5);
           otAmountNightExtra += (otPhase2 * hourlyRate * 0.3);
-          
           taxExemptOTIncome += (otPhase2 * hourlyRate * 0.5);
           taxExemptOTIncome += (otPhase2 * hourlyRate * 0.3);
         }
@@ -127,7 +116,10 @@ export const calculatePayroll = (
   const otIncome = Math.round(otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3 + otAmountNightExtra);
   const grossIncome = baseIncome + otIncome + totalAllowances;
 
-  const insuranceDeduction = Math.round(baseSalary * 0.105);
+  // 2. Tính bảo hiểm dựa trên LƯƠNG ĐÓNG BH
+  const insuranceBase = Number(config.insuranceSalary) || baseSalary;
+  const insuranceDeduction = Math.round(insuranceBase * 0.105);
+  
   const incomeForTaxCalculation = grossIncome - insuranceDeduction - taxExemptOTIncome;
   const taxableIncome = Math.max(0, incomeForTaxCalculation - 11000000);
   const personalTax = Math.round(calculatePIT(taxableIncome));
