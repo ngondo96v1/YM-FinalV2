@@ -166,6 +166,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-10 relative overflow-x-hidden no-scrollbar">
+      {/* Header chỉ chứa Logo và Profile Navigation */}
       <SalaryHeader 
         config={salaryConfig} 
         summary={summary}
@@ -174,12 +175,15 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         onExport={handleExportData}
         onImport={() => fileInputRef.current?.click()}
+        onlyTopNav={true} 
       />
       
       <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
 
-      <main className="px-5 mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
-        <section>
+      <main className="px-5 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        
+        {/* VỊ TRÍ 1: LỊCH LÀM VIỆC CHU KỲ (ƯU TIÊN LÊN TRÊN CÙNG) */}
+        <section className="mt-4">
           <div className="flex items-center justify-between mb-4 px-1">
              <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Lịch làm việc chu kỳ</h2>
              <div className="w-12 h-px bg-zinc-800 flex-1 ml-4 opacity-30"></div>
@@ -192,6 +196,25 @@ const App: React.FC = () => {
           />
         </section>
 
+        {/* VỊ TRÍ 2: THỰC NHẬN DỰ KIẾN (DASHBOARD TỔNG HỢP) */}
+        <section>
+          <div className="flex items-center justify-between mb-4 px-1">
+             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Thực nhận dự kiến</h2>
+             <div className="w-12 h-px bg-zinc-800 flex-1 ml-4 opacity-30"></div>
+          </div>
+          <SalaryHeader 
+            config={salaryConfig} 
+            summary={summary}
+            onUpdate={handleUpdateSalary} 
+            user={user}
+            onLogout={handleLogout}
+            onExport={handleExportData}
+            onImport={() => fileInputRef.current?.click()}
+            onlyDashboard={true} 
+          />
+        </section>
+
+        {/* VỊ TRÍ 3: PHỤ CẤP CÁ NHÂN */}
         <section>
           <AllowanceSection 
             allowances={allowances} 
