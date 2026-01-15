@@ -27,8 +27,6 @@ export const toDateKey = (date: Date): string => {
 };
 
 export const getPayrollRange = (targetYear: number, targetMonth: number) => {
-  // Chu kỳ lương tháng N: từ ngày 21 tháng N-1 đến ngày 20 tháng N
-  // targetMonth 1-indexed (1-12)
   const startDate = new Date(targetYear, targetMonth - 2, 21, 0, 0, 0);
   const endDate = new Date(targetYear, targetMonth - 1, 20, 23, 59, 59);
   return { startDate, endDate };
@@ -60,17 +58,26 @@ export const calculatePayroll = (
 
   const { startDate, endDate } = getPayrollRange(targetYear, targetMonth);
   
-  // LỌC CHẶT CHẼ: Chỉ tính toán những ngày nằm trong đúng chu kỳ 21 -> 20
+  // Tính toán dựa trên toàn bộ dữ liệu lịch để thống kê phép chính xác (không chỉ trong chu kỳ hiện tại)
+  // Tuy nhiên, các chỉ số lương vẫn chỉ tính trong relevantDays
   const relevantDays = days.filter(d => {
     const dDate = new Date(d.date + 'T00:00:00');
     return dDate >= startDate && dDate <= endDate;
+  });
+
+  // Thống kê phép: Tính trên toàn bộ lịch đã nhập
+  let usedAnnualLeave = 0;
+  let usedSickLeave = 0;
+  days.forEach(day => {
+    if (day.leave === LeaveType.PAID) usedAnnualLeave++;
+    if (day.leave === LeaveType.SICK) usedSickLeave++;
   });
 
   let totalWorkDays = 0;
   let otAmountNormal = 0, otAmountSunday = 0, otAmountHolidayX2 = 0, otAmountHolidayX3 = 0, otAmountNightExtra = 0;
   let otHoursNormal = 0, otHoursSunday = 0, otHoursHolidayX2 = 0, otHoursHolidayX3 = 0, otHoursNightExtra = 0;
   let taxExemptOTIncome = 0;
-  let sundayOTAllowance = 0; // Phụ cấp 22k cho mỗi ngày Chủ Nhật có tăng ca
+  let sundayOTAllowance = 0;
 
   relevantDays.forEach(day => {
     const dateObj = new Date(day.date + 'T00:00:00');
@@ -86,7 +93,6 @@ export const calculatePayroll = (
 
     const hours = parseFloat(day.overtimeHours?.toString() || "0") || 0;
     if (hours > 0) {
-      // Nếu là Chủ Nhật và có phát sinh giờ tăng ca thì cộng thêm 22.000đ phụ cấp
       if (isSunday && !day.isHoliday) {
         sundayOTAllowance += 22000;
       }
@@ -123,7 +129,6 @@ export const calculatePayroll = (
 
   const baseIncome = Math.round(totalWorkDays * dailyRate);
   const otIncome = Math.round(otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3 + otAmountNightExtra);
-  // Tổng phụ cấp bao gồm phụ cấp nhập tay + phụ cấp Chủ Nhật tự động
   const totalAllowances = Math.round(totalManualAllowances + sundayOTAllowance);
   const grossIncome = baseIncome + otIncome + totalAllowances;
 
@@ -153,6 +158,8 @@ export const calculatePayroll = (
     personalTax: Math.round(personalTax),
     netIncome: Math.round(netIncome),
     dailyRate: Math.round(dailyRate),
-    hourlyRate: Math.round(hourlyRate)
+    hourlyRate: Math.round(hourlyRate),
+    usedAnnualLeave,
+    usedSickLeave
   };
 };

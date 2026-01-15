@@ -1,17 +1,17 @@
 
 import React, { useState, useCallback } from 'react';
-import { SalaryConfig } from '../types';
+import { SalaryConfig, PayrollSummary } from '../types';
 import { formatCurrency, formatInputNumber, parseInputNumber } from '../utils';
 
 interface Props {
   config: SalaryConfig;
+  summary: PayrollSummary;
   onUpdate: (field: keyof SalaryConfig, value: number) => void;
   user: { name: string } | null;
-  onAuthClick: () => void;
   onLogout: () => void;
 }
 
-const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, onLogout }) => {
+const SalaryHeader: React.FC<Props> = ({ config, summary, onUpdate, user, onLogout }) => {
   const [isEditing, setIsEditing] = useState<keyof SalaryConfig | null>(null);
   const [tempValue, setTempValue] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -33,28 +33,23 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
 
   const handleSave = () => {
     if (isEditing) {
-      const val = isEditing.includes('Salary') ? parseInputNumber(tempValue) : parseFloat(tempValue) || 0;
+      const isNumberField = !isEditing.includes('Salary');
+      const val = !isNumberField ? parseInputNumber(tempValue) : parseFloat(tempValue) || 0;
       onUpdate(isEditing, val);
       setIsEditing(null);
     }
   };
 
-  const handleLogoutClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowProfileMenu(false);
-    onLogout();
-  };
-
   return (
-    <div className="bg-zinc-950/80 backdrop-blur-xl pt-10 pb-6 px-5 rounded-b-[2.5rem] shadow-2xl border-b border-zinc-800/50 sticky top-0 z-50">
+    <div className="bg-zinc-950/90 backdrop-blur-2xl pt-12 pb-6 px-5 rounded-b-[3rem] shadow-2xl border-b border-zinc-800/50 sticky top-0 z-50">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-3 group cursor-pointer">
             <div className="w-10 h-10 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
                 <i className="fa-solid fa-wallet text-zinc-950 text-xl"></i>
             </div>
             <div>
-                <h1 className="text-2xl font-black text-white tracking-tighter">YM <span className="text-orange-500">Final V1</span></h1>
-                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] -mt-1">Salary Calendar</p>
+                <h1 className="text-2xl font-black text-white tracking-tighter">YM <span className="text-orange-500">Money</span></h1>
+                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] -mt-1">Personal Dashboard</p>
             </div>
         </div>
         
@@ -77,7 +72,7 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
                   <div className="absolute right-0 mt-3 w-48 bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200 z-[101]">
                     <button 
                       type="button"
-                      onClick={handleLogoutClick} 
+                      onClick={() => { setShowProfileMenu(false); onLogout(); }} 
                       className="w-full flex items-center space-x-3 p-3 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors text-left"
                     >
                       <i className="fa-solid fa-right-from-bracket text-xs"></i>
@@ -91,38 +86,47 @@ const SalaryHeader: React.FC<Props> = ({ config, onUpdate, user, onAuthClick, on
         </div>
       </div>
 
-      <div className="space-y-3">
-        {/* Lương Cơ Bản - Chiếm full width hàng trên */}
-        <div onClick={() => startEdit('baseSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[90px] ${isEditing === 'baseSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-          <div className="flex justify-between items-center">
-            <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Lương Cơ Bản (Tính thu nhập)</p>
-            <i className="fa-solid fa-pen text-[8px] text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+      <div className="grid grid-cols-1 gap-3">
+        {/* Lương Cơ Bản & BHXH - Nhóm lại thành 1 hàng ngang */}
+        <div className="grid grid-cols-2 gap-3">
+          <div onClick={() => startEdit('baseSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between ${isEditing === 'baseSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
+            <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Lương Cơ Bản</p>
+            {isEditing === 'baseSalary' ? (
+              <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
+            ) : (
+              <p className="text-lg font-black text-white truncate">{formatCurrency(config.baseSalary || 0)}</p>
+            )}
           </div>
-          {isEditing === 'baseSalary' ? (
-            <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-2xl font-black text-orange-500 outline-none" />
-          ) : (
-            <p className="text-2xl font-black text-white truncate">{formatCurrency(config.baseSalary || 0)}</p>
-          )}
+          <div onClick={() => startEdit('insuranceSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between ${isEditing === 'insuranceSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
+            <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Đóng BHXH</p>
+            {isEditing === 'insuranceSalary' ? (
+              <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
+            ) : (
+              <p className="text-lg font-black text-zinc-400 truncate">{formatCurrency(config.insuranceSalary || 0)}</p>
+            )}
+          </div>
         </div>
 
-        {/* Hàng dưới - Lương BH và Công chuẩn */}
-        <div className="grid grid-cols-2 gap-3">
-            <div onClick={() => startEdit('insuranceSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[80px] ${isEditing === 'insuranceSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-                <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Lương đóng BH</p>
-                {isEditing === 'insuranceSalary' ? (
-                    <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
-                ) : (
-                    <p className="text-lg font-black text-zinc-300 truncate">{formatCurrency(config.insuranceSalary || 0)}</p>
-                )}
+        {/* Thống kê nhanh Phép & Công - Gộp chung để tối ưu diện tích */}
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-4 flex items-center justify-between divide-x divide-zinc-800/50">
+            <div className="flex-1 pr-4">
+               <div className="flex justify-between items-center mb-1.5">
+                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">Ngày Công</p>
+                  <span className="text-[10px] font-black text-white">{summary.totalWorkDays}/{config.standardWorkDays}</span>
+               </div>
+               <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (summary.totalWorkDays / (config.standardWorkDays || 1)) * 100)}%` }}></div>
+               </div>
             </div>
-
-            <div onClick={() => startEdit('standardWorkDays')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between min-h-[80px] ${isEditing === 'standardWorkDays' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-                <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">Ngày Công chuẩn</p>
-                {isEditing === 'standardWorkDays' ? (
-                    <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
-                ) : (
-                    <p className="text-lg font-black text-white">{config.standardWorkDays} <span className="text-[10px] text-zinc-600">NGÀY</span></p>
-                )}
+            <div className="flex-1 pl-4 flex justify-around">
+               <div className="text-center">
+                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mb-1">Phép</p>
+                  <span className="text-xs font-black text-green-500">{summary.usedAnnualLeave}</span>
+               </div>
+               <div className="text-center">
+                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mb-1">Bệnh</p>
+                  <span className="text-xs font-black text-rose-500">{summary.usedSickLeave}</span>
+               </div>
             </div>
         </div>
       </div>

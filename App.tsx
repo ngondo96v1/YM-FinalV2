@@ -24,10 +24,8 @@ const USER_KEY = 'ym_final_v1_user_prod';
 const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // State quản lý ngày đang xem trên lịch
   const [currentViewDate, setCurrentViewDate] = useState(() => {
     const d = new Date();
-    // Chốt công ngày 20. Nếu > 20 thì thuộc chu kỳ lương tháng tiếp theo
     if (d.getDate() > 20) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
@@ -42,7 +40,9 @@ const App: React.FC = () => {
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>({
     baseSalary: 0,
     standardWorkDays: 26,
-    insuranceSalary: 0
+    insuranceSalary: 0,
+    totalAnnualLeave: 0,
+    totalSickLeave: 0
   });
   
   const [allowances, setAllowances] = useState<Allowance[]>([]);
@@ -118,14 +118,8 @@ const App: React.FC = () => {
     setSalaryConfig(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleLogin = (name: string) => {
-    const newUser = { name };
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-    setUser(newUser);
-  };
-
   const handleLogout = useCallback(() => {
-    if (window.confirm("Dữ liệu chấm công của bạn vẫn sẽ được lưu tại trình duyệt này. Bạn có muốn đăng xuất?")) {
+    if (window.confirm("Đăng xuất? Dữ liệu vẫn được lưu tại thiết bị này.")) {
       localStorage.removeItem(USER_KEY);
       setUser(null);
     }
@@ -137,7 +131,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ym-money-backup-${new Date().toLocaleDateString('vi-VN')}.json`;
+    link.download = `ym-backup-${new Date().toLocaleDateString('vi-VN')}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -145,53 +139,49 @@ const App: React.FC = () => {
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
         if (json.salaryConfig && json.daysData) {
-          if (window.confirm("Dữ liệu mới sẽ ghi đè lên dữ liệu hiện tại. Bạn chắc chắn chứ?")) {
-            setSalaryConfig(json.salaryConfig);
-            setAllowances(json.allowances || []);
-            setDaysData(json.daysData);
-            alert("Đồng bộ dữ liệu thành công!");
-          }
-        } else {
-          alert("File không đúng định dạng sao lưu của YM Money.");
+          setSalaryConfig(json.salaryConfig);
+          setAllowances(json.allowances || []);
+          setDaysData(json.daysData);
+          alert("Nhập liệu thành công!");
         }
-      } catch (err) {
-        alert("Lỗi khi đọc file. Vui lòng thử lại.");
-      }
+      } catch (err) { alert("Lỗi định dạng file!"); }
     };
     reader.readAsText(file);
-    e.target.value = "";
   };
 
   if (!user) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <AuthModal onClose={() => {}} onLogin={handleLogin} isForced={true} />
+        <AuthModal onClose={() => {}} onLogin={(name) => {
+          const newUser = { name };
+          localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+          setUser(newUser);
+        }} isForced={true} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-24 relative overflow-x-hidden">
+    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-24 relative overflow-x-hidden no-scrollbar">
       <SalaryHeader 
         config={salaryConfig} 
+        summary={summary}
         onUpdate={handleUpdateSalary} 
         user={user}
-        onAuthClick={() => {}} 
         onLogout={handleLogout}
       />
       
       <main className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-        <StatsSection summary={summary} />
+        <StatsSection summary={summary} config={salaryConfig} />
         
         <div className="px-5 mt-8 space-y-4">
           <div className="flex items-center justify-between px-1">
-             <h2 className="text-sm font-black text-zinc-600 uppercase tracking-[0.2em]">Lịch Chấm Công</h2>
+             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Lịch làm việc</h2>
              <div className="w-12 h-px bg-zinc-800 flex-1 ml-4 opacity-30"></div>
           </div>
           <Calendar 
@@ -211,41 +201,27 @@ const App: React.FC = () => {
           onSetAll={(val) => setAllowances(prev => prev.map(a => ({ ...a, isActive: val })))}
         />
 
-        <div className="px-5 mt-10 grid grid-cols-2 gap-4">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImportData} 
-              accept=".json" 
-              className="hidden" 
-            />
+        <div className="px-5 mt-10 flex space-x-3">
+            <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
             <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-3 group active:scale-95 transition-all"
+                className="flex-1 py-4 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-2 active:scale-95 transition-all"
             >
-                <i className="fa-solid fa-cloud-arrow-up text-zinc-600 group-hover:text-blue-500"></i>
-                <span className="text-[10px] font-black text-zinc-500 group-hover:text-zinc-300 uppercase tracking-widest">Nhập Dữ liệu</span>
+                <i className="fa-solid fa-file-import text-zinc-500"></i>
+                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Nhập File</span>
             </button>
             <button 
                 onClick={handleExportData}
-                className="w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-3 group active:scale-95 transition-all"
+                className="flex-1 py-4 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-2 active:scale-95 transition-all"
             >
-                <i className="fa-solid fa-cloud-arrow-down text-zinc-600 group-hover:text-orange-500"></i>
-                <span className="text-[10px] font-black text-zinc-500 group-hover:text-zinc-300 uppercase tracking-widest">Sao lưu JSON</span>
+                <i className="fa-solid fa-file-export text-zinc-500"></i>
+                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Xuất File</span>
             </button>
         </div>
       </main>
 
-      <footer className="mt-12 px-8 py-10 border-t border-zinc-900 text-center space-y-4 opacity-40 safe-pb">
-        <div className="flex justify-center space-x-6 text-zinc-600">
-            <i className="fa-solid fa-shield-halved text-lg"></i>
-            <i className="fa-solid fa-lock text-lg"></i>
-            <i className="fa-solid fa-bolt-lightning text-lg"></i>
-        </div>
-        <div>
-            <p className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.3em]">YM Money &bull; Personal Salary</p>
-            <p className="text-zinc-700 text-[8px] font-bold mt-1 tracking-widest uppercase">Privacy First &bull; No Backend &copy; 2024</p>
-        </div>
+      <footer className="mt-12 px-8 py-10 text-center opacity-30 safe-pb">
+          <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.4em]">YM Money &bull; Smart Salary Tracker</p>
       </footer>
 
       {isEditModalOpen && selectedDay && (
