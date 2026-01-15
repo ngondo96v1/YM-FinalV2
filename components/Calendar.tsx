@@ -4,27 +4,24 @@ import { DayData, ShiftType, LeaveType } from '../types';
 import { toDateKey, getPayrollRange } from '../utils';
 
 interface Props {
-  viewDate: Date; // Tháng đích của chu kỳ lương
+  viewDate: Date;
   onViewDateChange: (date: Date) => void;
   onDayClick: (date: Date) => void;
   daysData: DayData[];
 }
 
 const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, daysData }) => {
-  // Lấy năm và tháng hiện tại từ viewDate
   const targetYear = viewDate.getFullYear();
   const targetMonth = viewDate.getMonth();
 
   const { calendarDays, startDate, endDate } = useMemo(() => {
-    const range = getPayrollRange(targetYear, targetMonth);
+    // Chu kỳ 21 tháng n-1 đến 20 tháng n
+    const range = getPayrollRange(targetYear, targetMonth + 1);
     const start = range.startDate;
     const end = range.endDate;
     
     const days: (Date | null)[] = [];
-    
-    // Padding: Tìm thứ của ngày 21 (0=CN, 1=T2...)
     const startDayOfWeek = start.getDay(); 
-    // T2 là index 0
     const paddingCount = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
     
     for (let i = 0; i < paddingCount; i++) {
@@ -32,7 +29,6 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
     }
     
     let curr = new Date(start);
-    // Vòng lặp lấy chính xác dải ngày 21 -> 27
     while (curr <= end) {
       days.push(new Date(curr));
       curr.setDate(curr.getDate() + 1);
@@ -42,15 +38,13 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
   }, [targetYear, targetMonth]);
 
   const changeCycle = (offset: number) => {
-    // Luôn tạo một đối tượng Date mới hoàn toàn để React nhận diện thay đổi
     const nextDate = new Date(targetYear, targetMonth + offset, 1);
     onViewDateChange(nextDate);
   };
 
   const goTodayCycle = () => {
     const today = new Date();
-    // Nếu hôm nay đã qua ngày 27, mặc định xem chu kỳ lương tháng tới
-    if (today.getDate() > 27) {
+    if (today.getDate() > 20) {
       onViewDateChange(new Date(today.getFullYear(), today.getMonth() + 1, 1));
     } else {
       onViewDateChange(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -59,6 +53,10 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
 
   const getDayStatus = (date: Date) => {
     const key = toDateKey(date);
+    // Chỉ trả về dữ liệu nếu ngày thuộc phạm vi hiển thị hiện tại
+    if (date < startDate || date > endDate) {
+      return undefined;
+    }
     return daysData.find(d => d.date === key);
   };
 
@@ -66,14 +64,12 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
 
   return (
     <div className="bg-zinc-900 rounded-[2.5rem] p-6 border border-zinc-800 shadow-2xl relative overflow-hidden">
-      {/* CỰC KỲ QUAN TRỌNG: Thêm pointer-events-none để không chặn click của nút bên dưới */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 blur-[40px] rounded-full pointer-events-none"></div>
       
       <header className="flex items-center justify-between mb-8 relative z-10">
         <button 
           onClick={() => changeCycle(-1)} 
           className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all border border-zinc-800 text-zinc-400 hover:text-orange-500"
-          aria-label="Chu kỳ trước"
         >
           <i className="fa-solid fa-chevron-left"></i>
         </button>
@@ -89,11 +85,11 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
                 <h3 className="font-black text-white text-lg tracking-tight leading-none">Lương Tháng {targetMonth + 1}</h3>
                 <div className="flex items-center justify-center space-x-2 mt-2">
                     <span className="text-[10px] text-zinc-500 font-bold bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-800/50">
-                      {startDate.getDate()}/{startDate.getMonth() + 1}
+                      21/{startDate.getMonth() + 1}
                     </span>
                     <i className="fa-solid fa-arrow-right text-[8px] text-zinc-700"></i>
                     <span className="text-[10px] text-zinc-500 font-bold bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-800/50">
-                      {endDate.getDate()}/{endDate.getMonth() + 1}
+                      20/{endDate.getMonth() + 1}
                     </span>
                 </div>
             </div>
@@ -102,7 +98,6 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
         <button 
           onClick={() => changeCycle(1)} 
           className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all border border-zinc-800 text-zinc-400 hover:text-orange-500"
-          aria-label="Chu kỳ sau"
         >
           <i className="fa-solid fa-chevron-right"></i>
         </button>
@@ -149,7 +144,7 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
                 {status?.leave === LeaveType.SICK && <div className="w-1 h-1 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]"></div>}
               </div>
 
-              {status?.overtimeHours > 0 && (
+              {status && status.overtimeHours > 0 && (
                 <div className={`absolute -top-1 -right-1 px-1 rounded-md text-[7px] font-black leading-none py-0.5 border shadow-sm ${isToday ? 'bg-zinc-950 text-orange-400 border-zinc-800' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                   +{status.overtimeHours}
                 </div>

@@ -27,7 +27,8 @@ const App: React.FC = () => {
   // State quản lý ngày đang xem trên lịch
   const [currentViewDate, setCurrentViewDate] = useState(() => {
     const d = new Date();
-    if (d.getDate() > 27) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    // Chốt công ngày 20. Nếu > 20 thì thuộc chu kỳ lương tháng tiếp theo
+    if (d.getDate() > 20) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   
@@ -164,7 +165,6 @@ const App: React.FC = () => {
       }
     };
     reader.readAsText(file);
-    // Reset input value to allow selecting the same file again if needed
     e.target.value = "";
   };
 
