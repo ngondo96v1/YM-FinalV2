@@ -53,7 +53,6 @@ export const calculatePayroll = (
   const baseSalary = Number(config.baseSalary) || 0;
   const standardDays = Number(config.standardWorkDays) || 26;
   
-  // Công thức cốt lõi: Làm bao nhiêu tính bấy nhiêu dựa trên ngày công chuẩn
   const dailyRate = standardDays > 0 ? baseSalary / standardDays : 0;
   const hourlyRate = dailyRate / 8;
   const totalManualAllowances = Number(allowances) || 0;
@@ -67,18 +66,21 @@ export const calculatePayroll = (
 
   let usedAnnualLeave = 0;
   let usedSickLeave = 0;
+  let usedTetLeave = 0;
   let totalWorkDays = 0;
 
   relevantDays.forEach(day => {
-    const dateObj = new Date(day.date + 'T00:00:00');
-    const isSunday = dateObj.getDay() === 0;
-    
     if (day.leave === LeaveType.PAID) {
       usedAnnualLeave++;
       totalWorkDays += 1;
     } else if (day.leave === LeaveType.SICK) {
       usedSickLeave++;
+    } else if (day.leave === LeaveType.TET) {
+      usedTetLeave++;
+      totalWorkDays += 1;
     } else if (day.shift !== ShiftType.NONE) {
+      const dateObj = new Date(day.date + 'T00:00:00');
+      const isSunday = dateObj.getDay() === 0;
       if (day.isHoliday || !isSunday) {
         totalWorkDays += 1;
       }
@@ -165,6 +167,7 @@ export const calculatePayroll = (
     dailyRate: Math.round(dailyRate),
     hourlyRate: Math.round(hourlyRate),
     usedAnnualLeave,
-    usedSickLeave
+    usedSickLeave,
+    usedTetLeave
   };
 };

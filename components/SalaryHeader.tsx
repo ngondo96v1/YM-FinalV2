@@ -184,13 +184,15 @@ const SalaryHeader: React.FC<Props> = ({
                  <div className="flex justify-between text-[10px] font-bold"><span className="text-zinc-500">Lương ngày công:</span><span className="text-white">{formatCurrency(summary.baseIncome)}</span></div>
                  <div className="flex justify-between text-[10px] font-bold"><span className="text-zinc-500">Tiền tăng ca:</span><span className="text-white">{formatCurrency(summary.otIncome)}</span></div>
                  <div className="flex justify-between text-[10px] font-bold"><span className="text-zinc-500">Tổng phụ cấp:</span><span className="text-white">{formatCurrency(summary.totalAllowances)}</span></div>
+                 
                  <div className="flex justify-between text-[10px] font-bold pt-2 border-t border-zinc-800/30">
-                    <span className="text-rose-500">BHXH (10.5%):</span>
-                    <span className="text-rose-500">-{formatCurrency(summary.insuranceDeduction)}</span>
-                 </div>
-                 <div className="flex justify-between text-[10px] font-bold">
-                    <span className="text-rose-500">Thuế TNCN:</span>
-                    <span className="text-rose-500">-{formatCurrency(summary.personalTax)}</span>
+                    <div className="flex flex-col">
+                      <span className="text-rose-500 uppercase text-[9px] tracking-tighter">Các khoản khấu trừ</span>
+                      <span className="text-[7px] text-zinc-600 font-normal italic">Bao gồm BHXH & Thuế TNCN</span>
+                    </div>
+                    <span className="text-rose-500">
+                      -{formatCurrency(summary.insuranceDeduction + summary.personalTax)}
+                    </span>
                  </div>
               </div>
           </div>

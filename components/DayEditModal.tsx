@@ -43,6 +43,18 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
 
   const isNightExtraActive = !data.isHoliday && !isSunday && data.shift === ShiftType.NIGHT && data.overtimeHours > 8;
 
+  const handleSelectLeave = (type: LeaveType) => {
+    setData(prev => {
+        const isSame = prev.leave === type;
+        return {
+            ...prev,
+            leave: isSame ? LeaveType.NONE : type,
+            shift: ShiftType.NONE, // Mặc định không chọn ca khi chọn trạng thái nghỉ
+            isHoliday: type === LeaveType.TET ? false : prev.isHoliday // Nghỉ tết thường không đi kèm flag Holiday để tránh tính trùng
+        };
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/90 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
       <div 
@@ -96,27 +108,24 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
             <p className="text-[11px] text-zinc-500 font-black uppercase tracking-widest mb-4 px-1 flex items-center">
                 <i className="fa-solid fa-umbrella-beach mr-2 opacity-50"></i> TRẠNG THÁI NGHỈ
             </p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {[
                   { type: LeaveType.PAID, label: 'Phép năm', icon: 'fa-plane', color: 'bg-green-600' },
-                  { type: LeaveType.SICK, label: 'Nghỉ bệnh', icon: 'fa-heart-pulse', color: 'bg-rose-600' }
+                  { type: LeaveType.SICK, label: 'Nghỉ bệnh', icon: 'fa-heart-pulse', color: 'bg-rose-600' },
+                  { type: LeaveType.TET, label: 'Nghỉ Tết', icon: 'fa-fire-burner', color: 'bg-orange-600' }
               ].map(opt => (
                 <button 
                     key={opt.type}
-                    onClick={() => setData(prev => ({ 
-                        ...prev, 
-                        leave: prev.leave === opt.type ? LeaveType.NONE : opt.type, 
-                        shift: ShiftType.NONE 
-                    }))}
+                    onClick={() => handleSelectLeave(opt.type)}
                     className={`
-                    flex-1 p-5 rounded-[2rem] flex items-center justify-center gap-3 border transition-all duration-300
+                    p-4 rounded-[1.8rem] flex flex-col items-center justify-center gap-2 border transition-all duration-300
                     ${data.leave === opt.type 
-                        ? `${opt.color} border-white/20 text-white shadow-xl` 
+                        ? `${opt.color} border-white/20 text-white shadow-xl scale-105` 
                         : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600'}
                     `}
                 >
                     <i className={`fa-solid ${opt.icon} text-sm`}></i>
-                    <span className="text-[10px] font-black uppercase tracking-wider">{opt.label}</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-center">{opt.label}</span>
                 </button>
               ))}
             </div>

@@ -142,6 +142,7 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
                 {status?.shift === ShiftType.NIGHT && <div className="w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_5px_rgba(129,140,248,0.8)]"></div>}
                 {status?.leave === LeaveType.PAID && <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></div>}
                 {status?.leave === LeaveType.SICK && <div className="w-1 h-1 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]"></div>}
+                {status?.leave === LeaveType.TET && <div className="w-1 h-1 rounded-full bg-orange-600 shadow-[0_0_5px_rgba(234,88,12,0.8)]"></div>}
               </div>
 
               {status && status.overtimeHours > 0 && (
@@ -160,7 +161,7 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
             { color: 'bg-indigo-400', label: 'Đêm' },
             { color: 'bg-green-500', label: 'Phép' },
             { color: 'bg-red-500', label: 'Bệnh' },
-            { color: 'bg-amber-400', label: 'T.Ca' }
+            { color: 'bg-orange-600', label: 'Tết' }
         ].map(item => (
             <div key={item.label} className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${item.color} shadow-sm`}></div>

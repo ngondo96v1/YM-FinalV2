@@ -8,7 +8,8 @@ export enum ShiftType {
 export enum LeaveType {
   NONE = 'NONE',
   PAID = 'PAID', // Phép năm
-  SICK = 'SICK'  // Nghỉ bệnh
+  SICK = 'SICK',  // Nghỉ bệnh
+  TET = 'TET'    // Nghỉ Tết (Hưởng nguyên lương)
 }
 
 export interface DayData {
@@ -61,4 +62,5 @@ export interface PayrollSummary {
   hourlyRate: number;
   usedAnnualLeave: number;
   usedSickLeave: number;
+  usedTetLeave: number;
 }
