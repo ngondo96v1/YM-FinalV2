@@ -15,7 +15,6 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
 
   return (
     <div className="px-5 mt-6 space-y-4">
-      {/* Primary Income Card */}
       <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 rounded-[2.5rem] border border-zinc-800 shadow-xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-[50px] rounded-full"></div>
         
@@ -51,13 +50,24 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
 
           {isDetailed && (
             <div className="mt-6 space-y-6 pt-6 border-t border-zinc-800 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                   <div className="bg-zinc-900/40 p-2 rounded-xl border border-zinc-800/50">
+                      <p className="text-[7px] text-zinc-600 font-black uppercase mb-0.5">Giá trị 1 công</p>
+                      <p className="text-[10px] font-black text-zinc-300">{formatCurrency(summary.dailyRate)}</p>
+                   </div>
+                   <div className="bg-zinc-900/40 p-2 rounded-xl border border-zinc-800/50">
+                      <p className="text-[7px] text-zinc-600 font-black uppercase mb-0.5">Giá trị 1h OT</p>
+                      <p className="text-[10px] font-black text-zinc-300">{formatCurrency(summary.hourlyRate)}</p>
+                   </div>
+                </div>
+
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] text-zinc-500 font-black uppercase">Lương ngày công ({summary.totalWorkDays}N)</span>
+                    <span className="text-[9px] text-zinc-500 font-black uppercase">Lương ngày công ({summary.totalWorkDays} công)</span>
                     <span className="text-xs font-black text-white">{formatCurrency(summary.baseIncome)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] text-zinc-500 font-black uppercase">Tăng ca ({summary.totalOTHours}H)</span>
+                    <span className="text-[9px] text-zinc-500 font-black uppercase">Tăng ca ({summary.totalOTHours} giờ)</span>
                     <span className="text-xs font-black text-white">{formatCurrency(summary.otIncome)}</span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -74,14 +84,14 @@ const StatsSection: React.FC<Props> = ({ summary }) => {
                       <div className="text-[10px] space-y-1">
                         <div className="flex justify-between"><span className="text-zinc-500">Ngày (x1.5):</span> <span className="text-white">{summary.otHoursNormal}h</span></div>
                         <div className="flex justify-between"><span className="text-zinc-500">Đêm (x1.8):</span> <span className="text-white">{summary.otHoursNightExtra}h</span></div>
-                        <div className="flex justify-between"><span className="text-zinc-500">CN/Lễ:</span> <span className="text-white">{summary.otHoursSunday + summary.otHoursHolidayX2}h</span></div>
+                        <div className="flex justify-between"><span className="text-zinc-500">CN/Lễ (x2.0+):</span> <span className="text-white">{summary.otHoursSunday + summary.otHoursHolidayX2}h</span></div>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-[8px] text-rose-500 font-black uppercase tracking-widest">Chi tiết thuế</p>
+                      <p className="text-[8px] text-rose-500 font-black uppercase tracking-widest">Khấu trừ & Thuế</p>
                       <div className="text-[10px] space-y-1">
-                        <div className="flex justify-between"><span className="text-zinc-500">TN tính thuế:</span> <span className="text-white">{formatCurrency(summary.taxableIncome)}</span></div>
-                        <div className="flex justify-between"><span className="text-zinc-500">Thuế tạm tính:</span> <span className="text-rose-500">{formatCurrency(summary.personalTax)}</span></div>
+                        <div className="flex justify-between"><span className="text-zinc-500">BHXH (10.5%):</span> <span className="text-rose-400">-{formatCurrency(summary.insuranceDeduction)}</span></div>
+                        <div className="flex justify-between"><span className="text-zinc-500">Thuế TNCN:</span> <span className="text-rose-400">-{formatCurrency(summary.personalTax)}</span></div>
                       </div>
                     </div>
                 </div>

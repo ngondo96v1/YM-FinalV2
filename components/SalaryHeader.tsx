@@ -18,7 +18,8 @@ const SalaryHeader: React.FC<Props> = ({ config, summary, onUpdate, user, onLogo
 
   const startEdit = useCallback((field: keyof SalaryConfig) => {
     setIsEditing(field);
-    const initialValue = (config[field] || 0).toString();
+    const currentValue = config[field];
+    const initialValue = currentValue !== undefined ? currentValue.toString() : "";
     setTempValue(field.includes('Salary') ? formatInputNumber(initialValue) : initialValue);
   }, [config]);
 
@@ -33,8 +34,8 @@ const SalaryHeader: React.FC<Props> = ({ config, summary, onUpdate, user, onLogo
 
   const handleSave = () => {
     if (isEditing) {
-      const isNumberField = !isEditing.includes('Salary');
-      const val = !isNumberField ? parseInputNumber(tempValue) : parseFloat(tempValue) || 0;
+      const isCurrencyField = isEditing.includes('Salary');
+      const val = isCurrencyField ? parseInputNumber(tempValue) : parseFloat(tempValue) || 0;
       onUpdate(isEditing, val);
       setIsEditing(null);
     }
@@ -49,7 +50,7 @@ const SalaryHeader: React.FC<Props> = ({ config, summary, onUpdate, user, onLogo
             </div>
             <div>
                 <h1 className="text-2xl font-black text-white tracking-tighter">YM <span className="text-orange-500">Money</span></h1>
-                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] -mt-1">Personal Dashboard</p>
+                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] -mt-1">Salary Calendar</p>
             </div>
         </div>
         
@@ -86,48 +87,64 @@ const SalaryHeader: React.FC<Props> = ({ config, summary, onUpdate, user, onLogo
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
-        {/* Lương Cơ Bản & BHXH - Nhóm lại thành 1 hàng ngang */}
-        <div className="grid grid-cols-2 gap-3">
-          <div onClick={() => startEdit('baseSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between ${isEditing === 'baseSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-            <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Lương Cơ Bản</p>
-            {isEditing === 'baseSalary' ? (
-              <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
-            ) : (
-              <p className="text-lg font-black text-white truncate">{formatCurrency(config.baseSalary || 0)}</p>
-            )}
-          </div>
-          <div onClick={() => startEdit('insuranceSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between ${isEditing === 'insuranceSalary' ? 'bg-zinc-800 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-            <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Đóng BHXH</p>
-            {isEditing === 'insuranceSalary' ? (
-              <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
-            ) : (
-              <p className="text-lg font-black text-zinc-400 truncate">{formatCurrency(config.insuranceSalary || 0)}</p>
-            )}
-          </div>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        {/* Lương Cơ Bản */}
+        <div onClick={() => startEdit('baseSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between h-24 ${isEditing === 'baseSalary' ? 'bg-zinc-800 border-orange-500/50 shadow-lg shadow-orange-500/5' : 'bg-zinc-900 border-zinc-800'}`}>
+          <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Lương Cơ Bản</p>
+          {isEditing === 'baseSalary' ? (
+            <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-orange-500 outline-none" />
+          ) : (
+            <p className="text-lg font-black text-white truncate">{formatCurrency(config.baseSalary || 0)}</p>
+          )}
         </div>
+        {/* Lương đóng BHXH */}
+        <div onClick={() => startEdit('insuranceSalary')} className={`p-4 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between h-24 ${isEditing === 'insuranceSalary' ? 'bg-zinc-800 border-indigo-500/50 shadow-lg shadow-indigo-500/5' : 'bg-zinc-900 border-zinc-800'}`}>
+          <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Lương đóng BHXH</p>
+          {isEditing === 'insuranceSalary' ? (
+            <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-full bg-transparent text-lg font-black text-indigo-400 outline-none" />
+          ) : (
+            <p className="text-lg font-black text-white truncate">{formatCurrency(config.insuranceSalary || 0)}</p>
+          )}
+        </div>
+      </div>
 
-        {/* Thống kê nhanh Phép & Công - Gộp chung để tối ưu diện tích */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-4 flex items-center justify-between divide-x divide-zinc-800/50">
-            <div className="flex-1 pr-4">
-               <div className="flex justify-between items-center mb-1.5">
-                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">Ngày Công</p>
-                  <span className="text-[10px] font-black text-white">{summary.totalWorkDays}/{config.standardWorkDays}</span>
-               </div>
-               <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (summary.totalWorkDays / (config.standardWorkDays || 1)) * 100)}%` }}></div>
-               </div>
+      {/* Ngày Công Chuẩn (Hệ số tính lương cho tháng này) */}
+      <div 
+        onClick={() => startEdit('standardWorkDays')} 
+        className={`p-4 rounded-3xl border transition-all cursor-pointer group flex items-center justify-between mb-3 ${isEditing === 'standardWorkDays' ? 'bg-zinc-800 border-orange-500/50 shadow-lg shadow-orange-500/5' : 'bg-zinc-900 border-zinc-800 shadow-inner'}`}
+      >
+        <div>
+          <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mb-0.5">Ngày Công Chuẩn (Hợp đồng)</p>
+          {isEditing === 'standardWorkDays' ? (
+            <div className="flex items-center space-x-2">
+              <input autoFocus type="text" inputMode="numeric" value={tempValue} onChange={handleInputChange} onBlur={handleSave} onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="w-20 bg-transparent text-xl font-black text-orange-500 outline-none border-b border-orange-500/30" />
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Công</span>
             </div>
-            <div className="flex-1 pl-4 flex justify-around">
-               <div className="text-center">
-                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mb-1">Phép</p>
-                  <span className="text-xs font-black text-green-500">{summary.usedAnnualLeave}</span>
-               </div>
-               <div className="text-center">
-                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mb-1">Bệnh</p>
-                  <span className="text-xs font-black text-rose-500">{summary.usedSickLeave}</span>
-               </div>
+          ) : (
+            <div className="flex items-baseline space-x-2">
+              <span className="text-xl font-black text-white">{config.standardWorkDays}</span>
+              <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Ngày/Chu kỳ</span>
             </div>
+          )}
+        </div>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isEditing === 'standardWorkDays' ? 'bg-orange-500 text-zinc-950' : 'bg-zinc-950 text-zinc-700'}`}>
+          <i className="fa-solid fa-calculator text-xs"></i>
+        </div>
+      </div>
+
+      {/* Thống kê nhanh từ lịch */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 grid grid-cols-3 gap-2">
+        <div className="flex flex-col items-center justify-center border-r border-zinc-800">
+           <p className="text-[7px] text-zinc-500 font-black uppercase tracking-tighter mb-1">Công Thực Tế</p>
+           <span className="text-sm font-black text-white">{summary.totalWorkDays}</span>
+        </div>
+        <div className="flex flex-col items-center justify-center border-r border-zinc-800">
+           <p className="text-[7px] text-zinc-500 font-black uppercase tracking-tighter mb-1">Phép Năm</p>
+           <span className="text-sm font-black text-green-500">{summary.usedAnnualLeave}</span>
+        </div>
+        <div className="flex flex-col items-center justify-center">
+           <p className="text-[7px] text-zinc-500 font-black uppercase tracking-tighter mb-1">Phép Bệnh</p>
+           <span className="text-sm font-black text-rose-500">{summary.usedSickLeave}</span>
         </div>
       </div>
     </div>

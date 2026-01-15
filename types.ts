@@ -30,9 +30,10 @@ export interface Allowance {
 export interface SalaryConfig {
   baseSalary: number; 
   standardWorkDays: number;
+  actualWorkDays?: number; // Ngày công thực tế do người dùng nhập
   insuranceSalary?: number;
-  totalAnnualLeave?: number; // Tổng ngày phép năm được cấp
-  totalSickLeave?: number;   // Tổng ngày phép bệnh được cấp
+  totalAnnualLeave?: number; 
+  totalSickLeave?: number;   
 }
 
 export interface PayrollSummary {
@@ -58,7 +59,6 @@ export interface PayrollSummary {
   netIncome: number; 
   dailyRate: number;
   hourlyRate: number;
-  // Thống kê phép
   usedAnnualLeave: number;
   usedSickLeave: number;
 }

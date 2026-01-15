@@ -52,28 +52,39 @@ export const calculatePayroll = (
 ): PayrollSummary => {
   const baseSalary = Number(config.baseSalary) || 0;
   const standardDays = Number(config.standardWorkDays) || 26;
+  
+  // Công thức cốt lõi: Làm bao nhiêu tính bấy nhiêu dựa trên ngày công chuẩn
   const dailyRate = standardDays > 0 ? baseSalary / standardDays : 0;
   const hourlyRate = dailyRate / 8;
   const totalManualAllowances = Number(allowances) || 0;
 
   const { startDate, endDate } = getPayrollRange(targetYear, targetMonth);
   
-  // Tính toán dựa trên toàn bộ dữ liệu lịch để thống kê phép chính xác (không chỉ trong chu kỳ hiện tại)
-  // Tuy nhiên, các chỉ số lương vẫn chỉ tính trong relevantDays
   const relevantDays = days.filter(d => {
     const dDate = new Date(d.date + 'T00:00:00');
     return dDate >= startDate && dDate <= endDate;
   });
 
-  // Thống kê phép: Tính trên toàn bộ lịch đã nhập
   let usedAnnualLeave = 0;
   let usedSickLeave = 0;
-  days.forEach(day => {
-    if (day.leave === LeaveType.PAID) usedAnnualLeave++;
-    if (day.leave === LeaveType.SICK) usedSickLeave++;
+  let totalWorkDays = 0;
+
+  relevantDays.forEach(day => {
+    const dateObj = new Date(day.date + 'T00:00:00');
+    const isSunday = dateObj.getDay() === 0;
+    
+    if (day.leave === LeaveType.PAID) {
+      usedAnnualLeave++;
+      totalWorkDays += 1;
+    } else if (day.leave === LeaveType.SICK) {
+      usedSickLeave++;
+    } else if (day.shift !== ShiftType.NONE) {
+      if (day.isHoliday || !isSunday) {
+        totalWorkDays += 1;
+      }
+    }
   });
 
-  let totalWorkDays = 0;
   let otAmountNormal = 0, otAmountSunday = 0, otAmountHolidayX2 = 0, otAmountHolidayX3 = 0, otAmountNightExtra = 0;
   let otHoursNormal = 0, otHoursSunday = 0, otHoursHolidayX2 = 0, otHoursHolidayX3 = 0, otHoursNightExtra = 0;
   let taxExemptOTIncome = 0;
@@ -82,20 +93,10 @@ export const calculatePayroll = (
   relevantDays.forEach(day => {
     const dateObj = new Date(day.date + 'T00:00:00');
     const isSunday = dateObj.getDay() === 0;
-
-    if (day.leave === LeaveType.PAID) {
-      totalWorkDays += 1;
-    } else if (day.shift !== ShiftType.NONE) {
-      if (day.isHoliday || !isSunday) {
-        totalWorkDays += 1;
-      }
-    }
-
     const hours = parseFloat(day.overtimeHours?.toString() || "0") || 0;
+
     if (hours > 0) {
-      if (isSunday && !day.isHoliday) {
-        sundayOTAllowance += 22000;
-      }
+      if (isSunday && !day.isHoliday) sundayOTAllowance += 22000;
 
       if (day.isHoliday) {
         const first8 = Math.min(hours, 8);
@@ -127,29 +128,33 @@ export const calculatePayroll = (
     }
   });
 
-  const baseIncome = Math.round(totalWorkDays * dailyRate);
-  const otIncome = Math.round(otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3 + otAmountNightExtra);
-  const totalAllowances = Math.round(totalManualAllowances + sundayOTAllowance);
+  const baseIncome = totalWorkDays * dailyRate;
+  const otIncome = otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3 + otAmountNightExtra;
+  const totalAllowances = totalManualAllowances + sundayOTAllowance;
   const grossIncome = baseIncome + otIncome + totalAllowances;
 
   const insuranceBase = Number(config.insuranceSalary) || baseSalary;
-  const insuranceDeduction = Math.round(insuranceBase * 0.105);
+  const insuranceDeduction = insuranceBase * 0.105;
   
   const incomeForTaxCalculation = grossIncome - insuranceDeduction - taxExemptOTIncome;
   const taxableIncome = Math.max(0, incomeForTaxCalculation - 11000000);
-  const personalTax = Math.round(calculatePIT(taxableIncome));
+  const personalTax = calculatePIT(taxableIncome);
   const netIncome = grossIncome - insuranceDeduction - personalTax;
 
   return {
     totalWorkDays: Number(totalWorkDays.toFixed(2)),
     totalOTHours: Number((otHoursNormal + otHoursSunday + otHoursHolidayX2 + otHoursHolidayX3).toFixed(2)),
-    otHoursNormal, otHoursSunday, otHoursHolidayX2, otHoursHolidayX3, otHoursNightExtra,
+    otHoursNormal: Number(otHoursNormal.toFixed(2)),
+    otHoursSunday: Number(otHoursSunday.toFixed(2)),
+    otHoursHolidayX2: Number(otHoursHolidayX2.toFixed(2)),
+    otHoursHolidayX3: Number(otHoursHolidayX3.toFixed(2)),
+    otHoursNightExtra: Number(otHoursNightExtra.toFixed(2)),
     otAmountNormal: Math.round(otAmountNormal),
     otAmountSunday: Math.round(otAmountSunday),
     otAmountHolidayX2: Math.round(otAmountHolidayX2),
     otAmountHolidayX3: Math.round(otAmountHolidayX3),
     otAmountNightExtra: Math.round(otAmountNightExtra),
-    totalAllowances,
+    totalAllowances: Math.round(totalAllowances),
     otIncome: Math.round(otIncome),
     baseIncome: Math.round(baseIncome),
     grossIncome: Math.round(grossIncome),
