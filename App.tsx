@@ -14,7 +14,6 @@ import {
 import Calendar from './components/Calendar';
 import DayEditModal from './components/DayEditModal';
 import AllowanceSection from './components/AllowanceSection';
-import StatsSection from './components/StatsSection';
 import SalaryHeader from './components/SalaryHeader';
 import AuthModal from './components/AuthModal';
 
@@ -68,8 +67,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isDataLoaded) {
-      const dataToSave = { salaryConfig, allowances, daysData };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ salaryConfig, allowances, daysData }));
     }
   }, [salaryConfig, allowances, daysData, isDataLoaded]);
 
@@ -131,7 +129,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ym-backup-${new Date().toLocaleDateString('vi-VN')}.json`;
+    link.download = `YM-Backup-${new Date().toLocaleDateString('vi-VN')}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -167,21 +165,23 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-24 relative overflow-x-hidden no-scrollbar">
+    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-10 relative overflow-x-hidden no-scrollbar">
       <SalaryHeader 
         config={salaryConfig} 
         summary={summary}
         onUpdate={handleUpdateSalary} 
         user={user}
         onLogout={handleLogout}
+        onExport={handleExportData}
+        onImport={() => fileInputRef.current?.click()}
       />
       
-      <main className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-        <StatsSection summary={summary} config={salaryConfig} />
-        
-        <div className="px-5 mt-8 space-y-4">
-          <div className="flex items-center justify-between px-1">
-             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Lịch làm việc</h2>
+      <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+
+      <main className="px-5 mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <section>
+          <div className="flex items-center justify-between mb-4 px-1">
+             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Lịch làm việc chu kỳ</h2>
              <div className="w-12 h-px bg-zinc-800 flex-1 ml-4 opacity-30"></div>
           </div>
           <Calendar 
@@ -190,37 +190,21 @@ const App: React.FC = () => {
             onDayClick={handleDayClick}
             daysData={daysData}
           />
-        </div>
+        </section>
 
-        <AllowanceSection 
-          allowances={allowances} 
-          onToggle={(id) => setAllowances(prev => prev.map(a => a.id === id ? { ...a, isActive: !a.isActive } : a))}
-          onAdd={(name, amount) => setAllowances(prev => [...prev, { id: Date.now().toString(), name, amount, isActive: true }])}
-          onEdit={(updated) => setAllowances(prev => prev.map(a => a.id === updated.id ? updated : a))}
-          onRemove={(id) => setAllowances(prev => prev.filter(a => a.id !== id))}
-          onSetAll={(val) => setAllowances(prev => prev.map(a => ({ ...a, isActive: val })))}
-        />
-
-        <div className="px-5 mt-10 flex space-x-3">
-            <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
-            <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 py-4 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-2 active:scale-95 transition-all"
-            >
-                <i className="fa-solid fa-file-import text-zinc-500"></i>
-                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Nhập File</span>
-            </button>
-            <button 
-                onClick={handleExportData}
-                className="flex-1 py-4 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center space-x-2 active:scale-95 transition-all"
-            >
-                <i className="fa-solid fa-file-export text-zinc-500"></i>
-                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Xuất File</span>
-            </button>
-        </div>
+        <section>
+          <AllowanceSection 
+            allowances={allowances} 
+            onToggle={(id) => setAllowances(prev => prev.map(a => a.id === id ? { ...a, isActive: !a.isActive } : a))}
+            onAdd={(name, amount) => setAllowances(prev => [...prev, { id: Date.now().toString(), name, amount, isActive: true }])}
+            onEdit={(updated) => setAllowances(prev => prev.map(a => a.id === updated.id ? updated : a))}
+            onRemove={(id) => setAllowances(prev => prev.filter(a => a.id !== id))}
+            onSetAll={(val) => setAllowances(prev => prev.map(a => ({ ...a, isActive: val })))}
+          />
+        </section>
       </main>
 
-      <footer className="mt-12 px-8 py-10 text-center opacity-30 safe-pb">
+      <footer className="mt-12 py-10 text-center opacity-20 safe-pb">
           <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.4em]">YM Money &bull; Smart Salary Tracker</p>
       </footer>
 
