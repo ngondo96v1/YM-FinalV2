@@ -32,6 +32,34 @@ export const getPayrollRange = (targetYear: number, targetMonth: number) => {
   return { startDate, endDate };
 };
 
+const FIXED_HOLIDAYS: Record<string, string> = {
+  "01-01": "Tết Dương Lịch",
+  "30-04": "Giải Phóng Miền Nam",
+  "01-05": "Quốc Tế Lao Động",
+  "02-09": "Quốc Khánh",
+  "25-12": "Giáng Sinh"
+};
+
+const MOVABLE_HOLIDAYS: Record<string, string> = {
+  "2024-02-09": "30 Tết Giáp Thìn",
+  "2024-02-10": "Mùng 1 Tết Giáp Thìn",
+  "2024-02-11": "Mùng 2 Tết Giáp Thìn",
+  "2024-02-12": "Mùng 3 Tết Giáp Thìn",
+  "2024-04-18": "Giỗ tổ Hùng Vương",
+  "2025-01-28": "Giao thừa Ất Tỵ",
+  "2025-01-29": "Mùng 1 Tết Ất Tỵ",
+  "2025-01-30": "Mùng 2 Tết Ất Tỵ",
+  "2025-01-31": "Mùng 3 Tết Ất Tỵ"
+};
+
+export const getHolidayName = (date: Date): string | null => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const fixedKey = `${day}-${month}`;
+  const fullKey = toDateKey(date);
+  return FIXED_HOLIDAYS[fixedKey] || MOVABLE_HOLIDAYS[fullKey] || null;
+};
+
 const calculatePIT = (taxableAmount: number): number => {
   if (taxableAmount <= 0) return 0;
   if (taxableAmount <= 5000000) return taxableAmount * 0.05;
@@ -51,112 +79,108 @@ export const calculatePayroll = (
   targetYear: number
 ): PayrollSummary => {
   const baseSalary = Number(config.baseSalary) || 0;
+  const insuranceSalary = Number(config.insuranceSalary) || baseSalary;
   const standardDays = Number(config.standardWorkDays) || 26;
-  
+
   const dailyRate = standardDays > 0 ? baseSalary / standardDays : 0;
-  const hourlyRate = dailyRate / 8;
-  const totalManualAllowances = Number(allowances) || 0;
+  const otDailyRate = standardDays > 0 ? insuranceSalary / standardDays : 0;
+  const otHourlyRate = otDailyRate / 8;
 
   const { startDate, endDate } = getPayrollRange(targetYear, targetMonth);
-  
   const relevantDays = days.filter(d => {
     const dDate = new Date(d.date + 'T00:00:00');
     return dDate >= startDate && dDate <= endDate;
   });
 
+  let totalWorkDays = 0;
   let usedAnnualLeave = 0;
   let usedSickLeave = 0;
   let usedTetLeave = 0;
-  let totalWorkDays = 0;
 
   relevantDays.forEach(day => {
+    const dDate = new Date(day.date + 'T00:00:00');
+    const isSunday = dDate.getDay() === 0;
+    const isPublicHoliday = !!getHolidayName(dDate) || day.isHoliday;
+
+    if (isSunday) return;
+
     if (day.leave === LeaveType.PAID) {
       usedAnnualLeave++;
-      totalWorkDays += 1;
+      totalWorkDays++;
     } else if (day.leave === LeaveType.SICK) {
       usedSickLeave++;
-    } else if (day.leave === LeaveType.TET) {
-      usedTetLeave++;
-      totalWorkDays += 1;
+    } else if (day.leave === LeaveType.TET || isPublicHoliday) {
+      if (day.leave === LeaveType.TET) usedTetLeave++;
+      totalWorkDays++;
     } else if (day.shift !== ShiftType.NONE) {
-      const dateObj = new Date(day.date + 'T00:00:00');
-      const isSunday = dateObj.getDay() === 0;
-      if (day.isHoliday || !isSunday) {
-        totalWorkDays += 1;
-      }
+      totalWorkDays++;
     }
   });
 
-  let otAmountNormal = 0, otAmountSunday = 0, otAmountHolidayX2 = 0, otAmountHolidayX3 = 0, otAmountNightExtra = 0;
+  let otIncome = 0;
+  let nightPremiumIncome = 0;
   let otHoursNormal = 0, otHoursSunday = 0, otHoursHolidayX2 = 0, otHoursHolidayX3 = 0, otHoursNightExtra = 0;
-  let taxExemptOTIncome = 0;
-  let sundayOTAllowance = 0;
 
   relevantDays.forEach(day => {
-    const dateObj = new Date(day.date + 'T00:00:00');
-    const isSunday = dateObj.getDay() === 0;
-    const hours = parseFloat(day.overtimeHours?.toString() || "0") || 0;
+    const dDate = new Date(day.date + 'T00:00:00');
+    const isSunday = dDate.getDay() === 0;
+    const isHoliday = !!getHolidayName(dDate) || day.isHoliday;
+    
+    const baseHours = (day.shift !== ShiftType.NONE && !isSunday) ? 8 : 0;
+    const hoursInput = Number(day.overtimeHours) || 0;
 
-    if (hours > 0) {
-      if (isSunday && !day.isHoliday) sundayOTAllowance += 22000;
-
-      if (day.isHoliday) {
-        const first8 = Math.min(hours, 8);
-        const extra = Math.max(0, hours - 8);
-        otHoursHolidayX2 += first8;
-        otHoursHolidayX3 += extra;
-        otAmountHolidayX2 += (first8 * hourlyRate * 2.0);
-        otAmountHolidayX3 += (extra * hourlyRate * 3.0);
-        taxExemptOTIncome += (first8 * hourlyRate * 1.0);
-        taxExemptOTIncome += (extra * hourlyRate * 2.0);
-      } else if (isSunday) {
-        otHoursSunday += hours;
-        otAmountSunday += (hours * hourlyRate * 2.0);
-        taxExemptOTIncome += (hours * hourlyRate * 1.0);
-      } else {
-        const otPhase1 = Math.min(hours, 8); 
-        const otPhase2 = Math.max(0, hours - 8);
-        otHoursNormal += hours;
-        otAmountNormal += (otPhase1 * hourlyRate * 1.5);
-        taxExemptOTIncome += (otPhase1 * hourlyRate * 0.5);
-        if (otPhase2 > 0) {
-          otHoursNightExtra += otPhase2;
-          otAmountNormal += (otPhase2 * hourlyRate * 1.5);
-          otAmountNightExtra += (otPhase2 * hourlyRate * 0.3);
-          taxExemptOTIncome += (otPhase2 * hourlyRate * 0.5);
-          taxExemptOTIncome += (otPhase2 * hourlyRate * 0.3);
+    if (isSunday && hoursInput > 0) {
+        // Chủ Nhật: 16h đầu x2.0, sau 16h x2.3
+        const normalHours = Math.min(hoursInput, 16);
+        const extraNightHours = Math.max(0, hoursInput - 16);
+        
+        otIncome += (normalHours * 2.0 * otHourlyRate);
+        otIncome += (extraNightHours * 2.3 * otHourlyRate);
+        
+        otHoursSunday += hoursInput;
+        if (extraNightHours > 0) {
+            otHoursNightExtra += extraNightHours;
+            nightPremiumIncome += (extraNightHours * 0.3 * otHourlyRate);
         }
-      }
+    } else if (!isSunday && hoursInput > 0) {
+        // Ngày thường hoặc ngày Lễ
+        // 1. Phân bổ OT theo định mức (8h đầu/sau 8h cho ngày Lễ)
+        if (isHoliday) {
+            const hX2 = Math.min(hoursInput, 8);
+            const hX3 = Math.max(0, hoursInput - 8);
+            otIncome += (hX2 * 2.0 * otHourlyRate) + (hX3 * 3.0 * otHourlyRate);
+            otHoursHolidayX2 += hX2;
+            otHoursHolidayX3 += hX3;
+        } else {
+            otIncome += (hoursInput * 1.5 * otHourlyRate);
+            otHoursNormal += hoursInput;
+        }
+
+        // 2. Tính phí đêm (+0.3) nếu TỔNG giờ làm (Base + OT) vượt 16
+        const totalDayHours = baseHours + hoursInput;
+        const nightHours = Math.max(0, totalDayHours - 16);
+        if (nightHours > 0) {
+            otIncome += (nightHours * 0.3 * otHourlyRate);
+            otHoursNightExtra += nightHours;
+            nightPremiumIncome += (nightHours * 0.3 * otHourlyRate);
+        }
     }
   });
 
   const baseIncome = totalWorkDays * dailyRate;
-  const otIncome = otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3 + otAmountNightExtra;
-  const totalAllowances = totalManualAllowances + sundayOTAllowance;
-  const grossIncome = baseIncome + otIncome + totalAllowances;
-
-  const insuranceBase = Number(config.insuranceSalary) || baseSalary;
-  const insuranceDeduction = insuranceBase * 0.105;
-  
-  const incomeForTaxCalculation = grossIncome - insuranceDeduction - taxExemptOTIncome;
-  const taxableIncome = Math.max(0, incomeForTaxCalculation - 11000000);
+  const grossIncome = baseIncome + otIncome + allowances;
+  const insuranceDeduction = insuranceSalary * 0.105;
+  const taxableIncome = Math.max(0, grossIncome - insuranceDeduction - 11000000);
   const personalTax = calculatePIT(taxableIncome);
   const netIncome = grossIncome - insuranceDeduction - personalTax;
 
   return {
-    totalWorkDays: Number(totalWorkDays.toFixed(2)),
-    totalOTHours: Number((otHoursNormal + otHoursSunday + otHoursHolidayX2 + otHoursHolidayX3).toFixed(2)),
-    otHoursNormal: Number(otHoursNormal.toFixed(2)),
-    otHoursSunday: Number(otHoursSunday.toFixed(2)),
-    otHoursHolidayX2: Number(otHoursHolidayX2.toFixed(2)),
-    otHoursHolidayX3: Number(otHoursHolidayX3.toFixed(2)),
-    otHoursNightExtra: Number(otHoursNightExtra.toFixed(2)),
-    otAmountNormal: Math.round(otAmountNormal),
-    otAmountSunday: Math.round(otAmountSunday),
-    otAmountHolidayX2: Math.round(otAmountHolidayX2),
-    otAmountHolidayX3: Math.round(otAmountHolidayX3),
-    otAmountNightExtra: Math.round(otAmountNightExtra),
-    totalAllowances: Math.round(totalAllowances),
+    totalWorkDays,
+    totalOTHours: otHoursNormal + otHoursSunday + otHoursHolidayX2 + otHoursHolidayX3,
+    otHoursNormal, otHoursSunday, otHoursHolidayX2, otHoursHolidayX3, otHoursNightExtra,
+    otAmountNormal: 0, otAmountSunday: 0, otAmountHolidayX2: 0, otAmountHolidayX3: 0, 
+    otAmountNightExtra: Math.round(nightPremiumIncome),
+    totalAllowances: allowances,
     otIncome: Math.round(otIncome),
     baseIncome: Math.round(baseIncome),
     grossIncome: Math.round(grossIncome),
@@ -165,9 +189,7 @@ export const calculatePayroll = (
     personalTax: Math.round(personalTax),
     netIncome: Math.round(netIncome),
     dailyRate: Math.round(dailyRate),
-    hourlyRate: Math.round(hourlyRate),
-    usedAnnualLeave,
-    usedSickLeave,
-    usedTetLeave
+    hourlyRate: Math.round(otHourlyRate),
+    usedAnnualLeave, usedSickLeave, usedTetLeave
   };
 };

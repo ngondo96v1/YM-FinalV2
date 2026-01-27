@@ -1,4 +1,3 @@
-
 export enum ShiftType {
   NONE = 'NONE',
   DAY = 'DAY',
@@ -31,10 +30,10 @@ export interface Allowance {
 export interface SalaryConfig {
   baseSalary: number; 
   standardWorkDays: number;
-  actualWorkDays?: number; // Ngày công thực tế do người dùng nhập
+  actualWorkDays?: number;
   insuranceSalary?: number;
   totalAnnualLeave?: number; 
-  totalSickLeave?: number;   
+  totalSickLeave?: number;
 }
 
 export interface PayrollSummary {

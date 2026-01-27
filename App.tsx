@@ -9,7 +9,8 @@ import {
 } from './types';
 import { 
   calculatePayroll, 
-  toDateKey 
+  toDateKey,
+  getHolidayName
 } from './utils';
 import Calendar from './components/Calendar';
 import DayEditModal from './components/DayEditModal';
@@ -40,7 +41,7 @@ const App: React.FC = () => {
     baseSalary: 0,
     standardWorkDays: 26,
     insuranceSalary: 0,
-    totalAnnualLeave: 0,
+    totalAnnualLeave: 12,
     totalSickLeave: 0
   });
   
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [activeHoliday, setActiveHoliday] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -63,6 +65,9 @@ const App: React.FC = () => {
       }
     }
     setIsDataLoaded(true);
+
+    const holiday = getHolidayName(new Date());
+    if (holiday) setActiveHoliday(holiday);
   }, []);
 
   useEffect(() => {
@@ -88,9 +93,10 @@ const App: React.FC = () => {
   const handleDayClick = useCallback((date: Date) => {
     const dateStr = toDateKey(date);
     const existing = daysData.find(d => d.date === dateStr);
+    
     setSelectedDay(existing || {
       date: dateStr,
-      shift: ShiftType.NONE,
+      shift: ShiftType.DAY, 
       leave: LeaveType.NONE,
       overtimeHours: 0,
       isHoliday: false
@@ -101,12 +107,6 @@ const App: React.FC = () => {
   const handleSaveDay = useCallback((updated: DayData) => {
     setDaysData(prev => {
       const filtered = prev.filter(d => d.date !== updated.date);
-      if (updated.shift === ShiftType.NONE && 
-          updated.leave === LeaveType.NONE && 
-          updated.overtimeHours === 0 && 
-          !updated.notes && !updated.isHoliday) {
-        return filtered;
-      }
       return [...filtered, updated];
     });
     setIsEditModalOpen(false);
@@ -117,7 +117,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogout = useCallback(() => {
-    if (window.confirm("Đăng xuất? Dữ liệu vẫn được lưu tại thiết bị này.")) {
+    if (window.confirm("Đăng xuất? Dữ liệu vẫn được lưu tại trình duyệt này.")) {
       localStorage.removeItem(USER_KEY);
       setUser(null);
     }
@@ -165,8 +165,29 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-10 relative overflow-x-hidden no-scrollbar">
-      {/* Header chỉ chứa Logo và Profile Navigation */}
+    <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-20 relative overflow-x-hidden no-scrollbar">
+      {/* Holiday Splash Alert - Tinh chỉnh bớt chói */}
+      {activeHoliday && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-500">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-10 w-full max-w-sm text-center relative overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-amber-600 to-red-600"></div>
+                <div className="mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-amber-700 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-red-900/20">
+                        <i className="fa-solid fa-flag text-2xl text-white"></i>
+                    </div>
+                </div>
+                <p className="text-[10px] text-amber-600 font-black uppercase tracking-[0.4em] mb-2">Chúc mừng ngày lễ</p>
+                <h2 className="text-2xl font-black text-white mb-2 uppercase leading-tight tracking-tight">{activeHoliday}</h2>
+                <button 
+                    onClick={() => setActiveHoliday(null)}
+                    className="mt-10 w-full py-4 bg-zinc-950 border border-zinc-800 rounded-2xl text-[10px] font-black text-zinc-400 uppercase tracking-widest hover:border-amber-500/20 transition-all active:scale-95"
+                >
+                    Đóng thông báo
+                </button>
+            </div>
+        </div>
+      )}
+
       <SalaryHeader 
         config={salaryConfig} 
         summary={summary}
@@ -175,17 +196,14 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         onExport={handleExportData}
         onImport={() => fileInputRef.current?.click()}
-        onlyTopNav={true} 
       />
       
       <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
 
-      <main className="px-5 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
-        
-        {/* VỊ TRÍ 1: LỊCH LÀM VIỆC CHU KỲ (ƯU TIÊN LÊN TRÊN CÙNG) */}
-        <section className="mt-4">
+      <main className="px-5 space-y-8 mt-6 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <section>
           <div className="flex items-center justify-between mb-4 px-1">
-             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Lịch làm việc chu kỳ</h2>
+             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Bảng công chu kỳ</h2>
              <div className="w-12 h-px bg-zinc-800 flex-1 ml-4 opacity-30"></div>
           </div>
           <Calendar 
@@ -196,26 +214,11 @@ const App: React.FC = () => {
           />
         </section>
 
-        {/* VỊ TRÍ 2: THỰC NHẬN DỰ KIẾN (DASHBOARD TỔNG HỢP) */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
-             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Thực nhận dự kiến</h2>
+             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Tiền phụ cấp hàng tháng</h2>
              <div className="w-12 h-px bg-zinc-800 flex-1 ml-4 opacity-30"></div>
           </div>
-          <SalaryHeader 
-            config={salaryConfig} 
-            summary={summary}
-            onUpdate={handleUpdateSalary} 
-            user={user}
-            onLogout={handleLogout}
-            onExport={handleExportData}
-            onImport={() => fileInputRef.current?.click()}
-            onlyDashboard={true} 
-          />
-        </section>
-
-        {/* VỊ TRÍ 3: PHỤ CẤP CÁ NHÂN */}
-        <section>
           <AllowanceSection 
             allowances={allowances} 
             onToggle={(id) => setAllowances(prev => prev.map(a => a.id === id ? { ...a, isActive: !a.isActive } : a))}
@@ -227,8 +230,8 @@ const App: React.FC = () => {
         </section>
       </main>
 
-      <footer className="mt-12 py-10 text-center opacity-20 safe-pb">
-          <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.4em]">YM Money &bull; Smart Salary Tracker</p>
+      <footer className="mt-auto py-12 text-center opacity-30">
+          <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.4em]">YM Money &bull; Smart Salary Tracker &bull; V1.0</p>
       </footer>
 
       {isEditModalOpen && selectedDay && (

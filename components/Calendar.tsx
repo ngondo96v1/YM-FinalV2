@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { DayData, ShiftType, LeaveType } from '../types';
-import { toDateKey, getPayrollRange } from '../utils';
+import { toDateKey, getPayrollRange, getHolidayName } from '../utils';
 
 interface Props {
   viewDate: Date;
@@ -15,7 +15,6 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
   const targetMonth = viewDate.getMonth();
 
   const { calendarDays, startDate, endDate } = useMemo(() => {
-    // Chu kỳ 21 tháng n-1 đến 20 tháng n
     const range = getPayrollRange(targetYear, targetMonth + 1);
     const start = range.startDate;
     const end = range.endDate;
@@ -53,121 +52,124 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
 
   const getDayStatus = (date: Date) => {
     const key = toDateKey(date);
-    // Chỉ trả về dữ liệu nếu ngày thuộc phạm vi hiển thị hiện tại
-    if (date < startDate || date > endDate) {
-      return undefined;
-    }
     return daysData.find(d => d.date === key);
   };
 
   const weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   return (
-    <div className="bg-zinc-900 rounded-[2.5rem] p-6 border border-zinc-800 shadow-2xl relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 blur-[40px] rounded-full pointer-events-none"></div>
-      
-      <header className="flex items-center justify-between mb-8 relative z-10">
+    <div className="bg-[#0c0c0e] rounded-[3rem] p-6 border border-zinc-800/50 shadow-2xl relative overflow-hidden">
+      <header className="flex items-center justify-between mb-8 relative z-10 px-2">
         <button 
           onClick={() => changeCycle(-1)} 
-          className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all border border-zinc-800 text-zinc-400 hover:text-orange-500"
+          className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center hover:bg-zinc-800 border border-zinc-800 text-zinc-500 active:scale-90 transition-all"
         >
-          <i className="fa-solid fa-chevron-left"></i>
+          <i className="fa-solid fa-chevron-left text-[10px]"></i>
         </button>
         
-        <div className="flex flex-col items-center text-center">
-            <button 
-              onClick={goTodayCycle}
-              className="mb-2 px-4 py-1.5 rounded-full bg-zinc-950 border border-zinc-800 text-[10px] font-black text-orange-500 uppercase tracking-widest hover:border-orange-500/30 active:scale-95 transition-all"
-            >
+        <div className="text-center">
+            <button onClick={goTodayCycle} className="mb-2 inline-block px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[8px] font-black text-orange-500 uppercase tracking-widest active:scale-95 transition-transform">
               Chu kỳ hiện tại
             </button>
-            <div>
-                <h3 className="font-black text-white text-lg tracking-tight leading-none">Lương Tháng {targetMonth + 1}</h3>
-                <div className="flex items-center justify-center space-x-2 mt-2">
-                    <span className="text-[10px] text-zinc-500 font-bold bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-800/50">
-                      21/{startDate.getMonth() + 1}
-                    </span>
-                    <i className="fa-solid fa-arrow-right text-[8px] text-zinc-700"></i>
-                    <span className="text-[10px] text-zinc-500 font-bold bg-zinc-950 px-2 py-0.5 rounded-md border border-zinc-800/50">
-                      20/{endDate.getMonth() + 1}
-                    </span>
-                </div>
-            </div>
+            <h3 className="font-black text-white text-base tracking-tight leading-none uppercase">Tháng {targetMonth + 1}</h3>
         </div>
 
         <button 
           onClick={() => changeCycle(1)} 
-          className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all border border-zinc-800 text-zinc-400 hover:text-orange-500"
+          className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center hover:bg-zinc-800 border border-zinc-800 text-zinc-500 active:scale-90 transition-all"
         >
-          <i className="fa-solid fa-chevron-right"></i>
+          <i className="fa-solid fa-chevron-right text-[10px]"></i>
         </button>
       </header>
 
-      <div className="grid grid-cols-7 gap-1 mb-4 border-b border-zinc-800/30 pb-3 relative z-10">
+      <div className="grid grid-cols-7 gap-1 mb-4">
         {weekDays.map(d => (
-          <div key={d} className={`text-center text-[10px] font-black tracking-widest ${d === 'CN' ? 'text-red-500/50' : 'text-zinc-600'}`}>{d}</div>
+          <div key={d} className={`text-center text-[10px] font-black tracking-widest ${d === 'CN' ? 'text-red-500' : 'text-zinc-700'}`}>{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2.5 max-h-[460px] overflow-y-auto no-scrollbar pr-1 pb-4 relative z-10">
+      <div className="grid grid-cols-7 gap-3 mb-8">
         {calendarDays.map((date, idx) => {
-          if (!date) return (
-            <div key={`empty-${idx}`} className="aspect-square flex items-center justify-center opacity-20">
-               <div className="w-1.5 h-1.5 rounded-full bg-zinc-800"></div>
-            </div>
-          );
+          if (!date) return <div key={`empty-${idx}`} className="aspect-square opacity-0" />;
           
           const status = getDayStatus(date);
           const isToday = new Date().toDateString() === date.toDateString();
           const isSunday = date.getDay() === 0;
+          const holidayName = getHolidayName(date);
+          const isHoliday = !!holidayName || !!status?.isHoliday;
+          const otHours = status?.overtimeHours || 0;
           
           return (
             <div 
               key={date.getTime()}
               onClick={() => onDayClick(date)}
               className={`
-                aspect-square rounded-[1.2rem] flex flex-col items-center justify-center cursor-pointer transition-all relative group/day
-                ${isToday ? 'bg-orange-500 border-orange-400 shadow-lg shadow-orange-500/20' : 'bg-zinc-950/50 border border-zinc-800 hover:bg-zinc-800 hover:scale-105'}
+                aspect-square rounded-full flex flex-col items-center justify-center cursor-pointer transition-all relative group
+                ${isToday ? 'bg-orange-500 border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-110 z-20' : 
+                  isHoliday ? 'holiday-border-animate scale-105 border border-red-500/30' :
+                  'bg-zinc-950 border border-zinc-800/80 hover:bg-zinc-800'}
               `}
             >
-              <div className="flex flex-col items-center leading-none">
-                  <span className={`text-[11px] font-black tracking-tighter ${isToday ? 'text-zinc-950' : isSunday ? 'text-red-500' : 'text-zinc-300'}`}>
-                    {date.getDate()}
-                  </span>
-                  <span className={`text-[6px] font-black uppercase mt-0.5 ${isToday ? 'text-zinc-900' : 'text-zinc-600'}`}>T{date.getMonth() + 1}</span>
-              </div>
-              
-              <div className="flex gap-[2px] mt-1.5 h-[4px]">
-                {status?.shift === ShiftType.DAY && <div className="w-1 h-1 rounded-full bg-orange-400 shadow-[0_0_5px_rgba(251,146,60,0.8)]"></div>}
-                {status?.shift === ShiftType.NIGHT && <div className="w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_5px_rgba(129,140,248,0.8)]"></div>}
-                {status?.leave === LeaveType.PAID && <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></div>}
-                {status?.leave === LeaveType.SICK && <div className="w-1 h-1 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]"></div>}
-                {status?.leave === LeaveType.TET && <div className="w-1 h-1 rounded-full bg-orange-600 shadow-[0_0_5px_rgba(234,88,12,0.8)]"></div>}
-              </div>
-
-              {status && status.overtimeHours > 0 && (
-                <div className={`absolute -top-1 -right-1 px-1 rounded-md text-[7px] font-black leading-none py-0.5 border shadow-sm ${isToday ? 'bg-zinc-950 text-orange-400 border-zinc-800' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
-                  +{status.overtimeHours}
+              {/* Nhãn số giờ OT ở góc trên bên phải */}
+              {otHours > 0 && (
+                <div className={`absolute -top-1 -right-1 z-30 px-1.5 py-0.5 rounded-md text-[7px] font-black shadow-lg animate-in zoom-in duration-300 ${status?.isHoliday ? 'bg-yellow-500 text-black' : 'bg-zinc-800 text-orange-500 border border-zinc-700'}`}>
+                   {otHours}
                 </div>
               )}
+
+              {/* Ánh sáng nền Ngày Lễ mờ ảo, không gây chói */}
+              {isHoliday && !isToday && (
+                <div className="absolute inset-0 bg-red-600/10 rounded-full blur-[4px]"></div>
+              )}
+              
+              <div className="flex flex-col items-center leading-none z-10 relative">
+                  <span className={`text-[12px] font-black tracking-tighter ${isToday ? 'text-zinc-950' : isHoliday ? 'text-white scale-110' : isSunday ? 'text-red-500' : 'text-zinc-300'}`}>
+                    {date.getDate()}
+                  </span>
+                  
+                  {isHoliday ? (
+                     <i className="fa-solid fa-crown text-[6px] text-yellow-500 mt-0.5 opacity-80 animate-soft-pulse"></i>
+                  ) : (
+                     <span className={`text-[6px] font-bold uppercase mt-0.5 ${isToday ? 'text-zinc-900/40' : (isSunday) ? 'text-red-500/40' : 'text-zinc-700'}`}>
+                       T{date.getMonth() + 1}
+                     </span>
+                  )}
+              </div>
+              
+              <div className="flex gap-[2px] mt-1 h-[3px] z-10 relative items-center justify-center">
+                {status?.shift === ShiftType.DAY && <div className="w-[3px] h-[3px] rounded-full bg-orange-500"></div>}
+                {status?.shift === ShiftType.NIGHT && <div className="w-[3px] h-[3px] rounded-full bg-indigo-500"></div>}
+                {status?.leave === LeaveType.PAID && <div className="w-[3.5px] h-[3.5px] rounded-full bg-green-500"></div>}
+                {status?.leave === LeaveType.SICK && <div className="w-[3.5px] h-[3.5px] rounded-full bg-rose-500"></div>}
+                {status?.leave === LeaveType.TET && <div className="w-[4px] h-[4px] rounded-full bg-red-500 animate-pulse"></div>}
+              </div>
             </div>
           );
         })}
       </div>
-      
-      <div className="mt-6 flex justify-center flex-wrap gap-x-5 gap-y-3 pt-6 border-t border-zinc-800/50 relative z-10">
-        {[
-            { color: 'bg-orange-500', label: 'Ngày' },
-            { color: 'bg-indigo-400', label: 'Đêm' },
-            { color: 'bg-green-500', label: 'Phép' },
-            { color: 'bg-red-500', label: 'Bệnh' },
-            { color: 'bg-orange-600', label: 'Tết' }
-        ].map(item => (
-            <div key={item.label} className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${item.color} shadow-sm`}></div>
-                <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">{item.label}</span>
-            </div>
-        ))}
+
+      {/* CHÚ THÍCH TRẠNG THÁI */}
+      <div className="pt-6 border-t border-zinc-800/50 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-1">
+        <div className="flex items-center space-x-1.5">
+          <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Sáng</span>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Đêm</span>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Phép</span>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Bệnh</span>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Tết</span>
+        </div>
       </div>
     </div>
   );
