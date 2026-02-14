@@ -97,7 +97,26 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
           const isSunday = date.getDay() === 0;
           const holidayName = getHolidayName(date);
           const isHoliday = !!holidayName || !!status?.isHoliday;
-          const otHours = status?.overtimeHours || 0;
+          
+          let otDisplayHours = 0;
+          if (status?.checkInTime && status?.checkOutTime) {
+            const [h1, m1] = status.checkInTime.split(':').map(Number);
+            const [h2, m2] = status.checkOutTime.split(':').map(Number);
+            let start = h1 * 60 + m1;
+            let end = h2 * 60 + m2;
+            if (end <= start) end += 24 * 60;
+            const total = (end - start) / 60;
+            
+            if (isHoliday) {
+              otDisplayHours = total;
+            } else if (isSunday) {
+              otDisplayHours = total; // Chủ nhật toàn bộ giờ là OT
+            } else {
+              otDisplayHours = Math.max(0, total - 8);
+            }
+          } else {
+            otDisplayHours = status?.overtimeHours || 0;
+          }
           
           return (
             <div 
@@ -110,14 +129,12 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
                   'bg-zinc-950 border border-zinc-800/80 hover:bg-zinc-800'}
               `}
             >
-              {/* Nhãn số giờ OT ở góc trên bên phải */}
-              {otHours > 0 && (
-                <div className={`absolute -top-1 -right-1 z-30 px-1.5 py-0.5 rounded-md text-[7px] font-black shadow-lg animate-in zoom-in duration-300 ${status?.isHoliday ? 'bg-yellow-500 text-black' : 'bg-zinc-800 text-orange-500 border border-zinc-700'}`}>
-                   {otHours}
+              {otDisplayHours > 0 && (
+                <div className={`absolute -top-1 -right-1 z-30 px-1.5 py-0.5 rounded-md text-[7px] font-black shadow-lg animate-in zoom-in duration-300 ${status?.isHoliday || holidayName ? 'bg-yellow-500 text-black' : 'bg-zinc-800 text-orange-500 border border-zinc-700'}`}>
+                   {otDisplayHours}
                 </div>
               )}
 
-              {/* Ánh sáng nền Ngày Lễ mờ ảo, không gây chói */}
               {isHoliday && !isToday && (
                 <div className="absolute inset-0 bg-red-600/10 rounded-full blur-[4px]"></div>
               )}
@@ -139,16 +156,15 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
               <div className="flex gap-[2px] mt-1 h-[3px] z-10 relative items-center justify-center">
                 {status?.shift === ShiftType.DAY && <div className="w-[3px] h-[3px] rounded-full bg-orange-500"></div>}
                 {status?.shift === ShiftType.NIGHT && <div className="w-[3px] h-[3px] rounded-full bg-indigo-500"></div>}
-                {status?.leave === LeaveType.PAID && <div className="w-[3.5px] h-[3.5px] rounded-full bg-green-500"></div>}
-                {status?.leave === LeaveType.SICK && <div className="w-[3.5px] h-[3.5px] rounded-full bg-rose-500"></div>}
-                {status?.leave === LeaveType.TET && <div className="w-[4px] h-[4px] rounded-full bg-red-500 animate-pulse"></div>}
+                {!isSunday && status?.leave === LeaveType.PAID && <div className="w-[3.5px] h-[3.5px] rounded-full bg-green-500"></div>}
+                {!isSunday && status?.leave === LeaveType.SICK && <div className="w-[3.5px] h-[3.5px] rounded-full bg-rose-500"></div>}
+                {!isSunday && status?.leave === LeaveType.TET && <div className="w-[4px] h-[4px] rounded-full bg-red-500 animate-pulse"></div>}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* CHÚ THÍCH TRẠNG THÁI */}
       <div className="pt-6 border-t border-zinc-800/50 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-1">
         <div className="flex items-center space-x-1.5">
           <div className="w-2 h-2 rounded-full bg-orange-500"></div>

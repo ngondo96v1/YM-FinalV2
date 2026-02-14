@@ -1,3 +1,4 @@
+
 export enum ShiftType {
   NONE = 'NONE',
   DAY = 'DAY',
@@ -15,6 +16,8 @@ export interface DayData {
   date: string; // ISO string YYYY-MM-DD
   shift: ShiftType;
   leave: LeaveType;
+  checkInTime?: string;  // HH:mm
+  checkOutTime?: string; // HH:mm
   overtimeHours: number;
   isHoliday: boolean;
   notes?: string;
@@ -34,6 +37,7 @@ export interface SalaryConfig {
   insuranceSalary?: number;
   totalAnnualLeave?: number; 
   totalSickLeave?: number;
+  dependents?: number; 
 }
 
 export interface PayrollSummary {
@@ -43,23 +47,27 @@ export interface PayrollSummary {
   otHoursSunday: number;
   otHoursHolidayX2: number;
   otHoursHolidayX3: number;
-  otHoursNightExtra: number; 
+  
   otAmountNormal: number;
   otAmountSunday: number;
   otAmountHolidayX2: number;
   otAmountHolidayX3: number;
-  otAmountNightExtra: number; 
+  
   totalAllowances: number;
   otIncome: number;
   baseIncome: number;
   grossIncome: number; 
   insuranceDeduction: number; 
+  taxExemptIncome: number;
   taxableIncome: number; 
   personalTax: number; 
+  totalDeductions: number;
   netIncome: number; 
   dailyRate: number;
   hourlyRate: number;
   usedAnnualLeave: number;
   usedSickLeave: number;
   usedTetLeave: number;
+  personalRelief: number;
+  dependentRelief: number;
 }

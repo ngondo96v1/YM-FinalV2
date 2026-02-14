@@ -42,7 +42,8 @@ const App: React.FC = () => {
     standardWorkDays: 26,
     insuranceSalary: 0,
     totalAnnualLeave: 12,
-    totalSickLeave: 0
+    totalSickLeave: 0,
+    dependents: 0
   });
   
   const [allowances, setAllowances] = useState<Allowance[]>([]);
@@ -76,19 +77,15 @@ const App: React.FC = () => {
     }
   }, [salaryConfig, allowances, daysData, isDataLoaded]);
 
-  const activeAllowancesTotal = useMemo(() => 
-    allowances.reduce((acc, curr) => curr.isActive ? acc + (Number(curr.amount) || 0) : acc, 0)
-  , [allowances]);
-
   const summary = useMemo(() => {
     return calculatePayroll(
       daysData, 
       salaryConfig, 
-      activeAllowancesTotal, 
+      allowances, // Truyền trực tiếp danh sách để xét miễn thuế theo tên
       currentViewDate.getMonth() + 1, 
       currentViewDate.getFullYear()
     );
-  }, [daysData, salaryConfig, activeAllowancesTotal, currentViewDate]);
+  }, [daysData, salaryConfig, allowances, currentViewDate]);
 
   const handleDayClick = useCallback((date: Date) => {
     const dateStr = toDateKey(date);
@@ -166,7 +163,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-20 relative overflow-x-hidden no-scrollbar">
-      {/* Holiday Splash Alert - Tinh chỉnh bớt chói */}
+      {/* Holiday Splash Alert */}
       {activeHoliday && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-500">
             <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-10 w-full max-w-sm text-center relative overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
