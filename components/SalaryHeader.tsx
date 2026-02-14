@@ -6,6 +6,8 @@ import { formatCurrency, formatInputNumber, parseInputNumber } from '../utils';
 interface Props {
   config: SalaryConfig;
   summary: PayrollSummary;
+  totalYearlyUsedLeave: number;
+  currentYear: number;
   onUpdate: (field: keyof SalaryConfig, value: number) => void;
   user: { name: string } | null;
   onLogout: () => void;
@@ -14,7 +16,7 @@ interface Props {
 }
 
 const SalaryHeader: React.FC<Props> = ({ 
-  config, summary, onUpdate, user, onLogout, onExport, onImport
+  config, summary, totalYearlyUsedLeave, currentYear, onUpdate, user, onLogout, onExport, onImport
 }) => {
   const [isEditing, setIsEditing] = useState<keyof SalaryConfig | null>(null);
   const [tempValue, setTempValue] = useState("");
@@ -40,7 +42,7 @@ const SalaryHeader: React.FC<Props> = ({
 
   const hasHolidayOT = summary.otHoursHolidayX2 > 0 || summary.otHoursHolidayX3 > 0 || summary.usedTetLeave > 0;
   const annualLeaveLimit = config.totalAnnualLeave || 12;
-  const remainingLeave = Math.max(0, annualLeaveLimit - summary.usedAnnualLeave);
+  const remainingLeave = Math.max(0, annualLeaveLimit - totalYearlyUsedLeave);
 
   return (
     <div className="bg-zinc-950 pt-12 pb-6 px-5 rounded-b-[3.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-b border-zinc-800/50 sticky top-0 z-50 glass-header">
@@ -163,26 +165,33 @@ const SalaryHeader: React.FC<Props> = ({
                             </div>
                         </div>
 
-                        {/* Thống kê Nghỉ phép (NEW) */}
+                        {/* Thống kê Nghỉ phép Nâng cao (Đồng bộ theo thực tế năm) */}
                         <div className="space-y-3 pt-2 border-t border-zinc-800/30">
                             <div className="flex items-center space-x-2">
                                 <div className="w-1.5 h-4 bg-green-500 rounded-full"></div>
-                                <p className="text-[9px] text-white font-black uppercase tracking-widest">Thống kê Nghỉ phép</p>
+                                <p className="text-[9px] text-white font-black uppercase tracking-widest">Thống kê Nghỉ phép ({currentYear})</p>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-2 pl-1">
-                                <div className="bg-zinc-950/40 p-4 rounded-2xl border border-green-900/20 flex flex-col items-center text-center">
-                                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1 tracking-widest">Phép năm đã dùng</p>
+                            <div className="grid grid-cols-3 gap-2 pl-1">
+                                <div className="bg-zinc-950/40 p-3 rounded-2xl border border-zinc-800/30 flex flex-col items-center text-center">
+                                    <p className="text-[7px] text-zinc-600 font-black uppercase mb-1 tracking-widest">Chu kỳ này</p>
                                     <div className="flex items-baseline space-x-1">
-                                        <span className="text-xl font-black text-green-500">{summary.usedAnnualLeave}</span>
-                                        <span className="text-[8px] font-bold text-zinc-600 uppercase">Ngày</span>
+                                        <span className="text-sm font-black text-green-500">{summary.usedAnnualLeave}</span>
+                                        <span className="text-[7px] font-bold text-zinc-700 uppercase">Ngày</span>
                                     </div>
                                 </div>
-                                <div className="bg-zinc-950/40 p-4 rounded-2xl border border-zinc-800/30 flex flex-col items-center text-center">
-                                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1 tracking-widest">Quỹ phép còn lại</p>
+                                <div className="bg-zinc-950/40 p-3 rounded-2xl border border-green-900/20 flex flex-col items-center text-center">
+                                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1 tracking-widest">Tổng trong năm</p>
                                     <div className="flex items-baseline space-x-1">
-                                        <span className="text-xl font-black text-white">{remainingLeave}</span>
-                                        <span className="text-[8px] font-bold text-zinc-600 uppercase">Ngày</span>
+                                        <span className="text-sm font-black text-white">{totalYearlyUsedLeave}</span>
+                                        <span className="text-[7px] font-bold text-zinc-700 uppercase">Ngày</span>
+                                    </div>
+                                </div>
+                                <div className="bg-zinc-950/40 p-3 rounded-2xl border border-orange-900/20 flex flex-col items-center text-center">
+                                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1 tracking-widest">Quỹ còn lại</p>
+                                    <div className="flex items-baseline space-x-1">
+                                        <span className="text-sm font-black text-orange-500">{remainingLeave}</span>
+                                        <span className="text-[7px] font-bold text-zinc-700 uppercase">Ngày</span>
                                     </div>
                                 </div>
                             </div>

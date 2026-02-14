@@ -77,11 +77,20 @@ const App: React.FC = () => {
     }
   }, [salaryConfig, allowances, daysData, isDataLoaded]);
 
+  // Tính toán tổng số ngày phép đã dùng trong cả năm của currentViewDate
+  const totalYearlyUsedLeave = useMemo(() => {
+    const viewYear = currentViewDate.getFullYear();
+    return daysData.filter(d => {
+      const dDate = new Date(d.date + 'T00:00:00');
+      return dDate.getFullYear() === viewYear && d.leave === LeaveType.PAID;
+    }).length;
+  }, [daysData, currentViewDate]);
+
   const summary = useMemo(() => {
     return calculatePayroll(
       daysData, 
       salaryConfig, 
-      allowances, // Truyền trực tiếp danh sách để xét miễn thuế theo tên
+      allowances, 
       currentViewDate.getMonth() + 1, 
       currentViewDate.getFullYear()
     );
@@ -163,7 +172,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen max-w-md mx-auto bg-zinc-950 flex flex-col pb-20 relative overflow-x-hidden no-scrollbar">
-      {/* Holiday Splash Alert */}
       {activeHoliday && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-500">
             <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-10 w-full max-w-sm text-center relative overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
@@ -188,6 +196,8 @@ const App: React.FC = () => {
       <SalaryHeader 
         config={salaryConfig} 
         summary={summary}
+        totalYearlyUsedLeave={totalYearlyUsedLeave}
+        currentYear={currentViewDate.getFullYear()}
         onUpdate={handleUpdateSalary} 
         user={user}
         onLogout={handleLogout}
