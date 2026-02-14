@@ -121,16 +121,18 @@ export const calculatePayroll = (
     }
 
     let totalWorkedHours = 0;
-    if (day.checkInTime && day.checkOutTime && day.shift !== ShiftType.NONE) {
-      const [h1, m1] = day.checkInTime.split(':').map(Number);
-      const [h2, m2] = day.checkOutTime.split(':').map(Number);
+    const hasCheckTimes = day.checkInTime && day.checkOutTime;
+
+    if (hasCheckTimes) {
+      // Ưu tiên tính từ giờ vào/ra nếu có
+      const [h1, m1] = day.checkInTime!.split(':').map(Number);
+      const [h2, m2] = day.checkOutTime!.split(':').map(Number);
       let start = h1 * 60 + m1;
       let end = h2 * 60 + m2;
       if (end <= start) end += 24 * 60;
       totalWorkedHours = (end - start) / 60;
     } else {
-      // FIX: Đối với Chủ Nhật/Ngày Lễ, overtimeHours lưu trữ TỔNG giờ làm.
-      // Đối với ngày thường, overtimeHours là giờ làm THÊM ngoài 8 tiếng chính.
+      // Fallback cho trường hợp chỉ nhập giờ OT thủ công hoặc theo ca
       if (isSunday || isHoliday) {
         totalWorkedHours = day.overtimeHours || 0;
       } else {
@@ -150,7 +152,6 @@ export const calculatePayroll = (
         otHoursHolidayX3 += hOT;
         taxExemptOT += (payX2 + payX3);
       } else if (isSunday) {
-        // Chủ nhật tính theo tổng giờ làm là OT x2.0
         const pay = totalWorkedHours * 2.0 * otHourlyRate;
         otAmountSunday += pay;
         otHoursSunday += totalWorkedHours;

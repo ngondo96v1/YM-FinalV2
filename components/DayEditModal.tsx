@@ -22,6 +22,7 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
     }
     if (isSunday) {
         initialData.leave = LeaveType.NONE;
+        initialData.shift = ShiftType.NONE; // Chủ nhật không chọn ca
     }
     return initialData;
   });
@@ -45,6 +46,7 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
   };
 
   const handleSelectShift = (type: ShiftType) => {
+    if (isSunday) return;
     let checkIn = "";
     let checkOut = "";
     if (type === ShiftType.DAY) { checkIn = "06:30"; checkOut = "14:30"; }
@@ -93,7 +95,6 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
   };
 
   const currentOT = data.overtimeHours || 0;
-  // Số giờ làm thực tế để hiển thị nhãn
   const displayTotal = isSunday || data.isHoliday ? currentOT : (data.shift !== ShiftType.NONE ? 8 : 0) + currentOT;
 
   return (
@@ -123,36 +124,38 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
         </header>
 
         <div className="space-y-6 overflow-y-auto max-h-[75vh] no-scrollbar pb-10">
-          <section>
-            <div className="flex justify-between items-center mb-3">
-              <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Ca làm việc</p>
-              {data.shift !== ShiftType.NONE && (
-                 <span className="text-[9px] text-orange-500 font-black uppercase">Đã chọn ca</span>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { type: ShiftType.DAY, label: 'Sáng', icon: 'fa-sun', desc: '06:30-14:30' },
-                { type: ShiftType.NIGHT, label: 'Đêm', icon: 'fa-moon', desc: '14:30-22:30' },
-                { type: ShiftType.NONE, label: 'Nghỉ', icon: 'fa-couch', desc: 'Ko làm' }
-              ].map(opt => (
-                <button 
-                  key={opt.type}
-                  onClick={() => handleSelectShift(opt.type)}
-                  className={`p-4 rounded-3xl flex flex-col items-center gap-1 border transition-all ${data.shift === opt.type ? 'bg-orange-500 border-white/20 text-zinc-950 scale-105 shadow-xl' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
-                >
-                  <i className={`fa-solid ${opt.icon} text-sm`}></i>
-                  <span className="text-[9px] font-black uppercase">{opt.label}</span>
-                  <span className="text-[7px] font-bold opacity-60">{opt.desc}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+          {!isSunday && (
+            <section>
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Ca làm việc</p>
+                {data.shift !== ShiftType.NONE && (
+                   <span className="text-[9px] text-orange-500 font-black uppercase">Đã chọn ca</span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { type: ShiftType.DAY, label: 'Sáng', icon: 'fa-sun', desc: '06:30-14:30' },
+                  { type: ShiftType.NIGHT, label: 'Đêm', icon: 'fa-moon', desc: '14:30-22:30' },
+                  { type: ShiftType.NONE, label: 'Nghỉ', icon: 'fa-couch', desc: 'Ko làm' }
+                ].map(opt => (
+                  <button 
+                    key={opt.type}
+                    onClick={() => handleSelectShift(opt.type)}
+                    className={`p-4 rounded-3xl flex flex-col items-center gap-1 border transition-all ${data.shift === opt.type ? 'bg-orange-500 border-white/20 text-zinc-950 scale-105 shadow-xl' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
+                  >
+                    <i className={`fa-solid ${opt.icon} text-sm`}></i>
+                    <span className="text-[9px] font-black uppercase">{opt.label}</span>
+                    <span className="text-[7px] font-bold opacity-60">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {(data.shift !== ShiftType.NONE || isSunday) && (
             <section className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2.5rem] space-y-6">
                 <div className="flex justify-between items-center">
-                   <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Giờ Vào & Ra {isSunday && '(Tính OT x2)'}</p>
+                   <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Giờ Vào & Ra {isSunday && '(OT x2.0)'}</p>
                    {!isSunday && (
                       <button onClick={() => { const newH = !data.isHoliday; setData(d => ({ ...d, isHoliday: newH, overtimeHours: calculateOT(data.checkInTime, data.checkOutTime) })); }} className={`w-10 h-6 rounded-full relative transition-all ${data.isHoliday ? 'bg-red-600' : 'bg-zinc-800'}`}>
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${data.isHoliday ? 'left-5' : 'left-1'}`}></div>
@@ -186,7 +189,7 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
                       <div className="flex gap-1 justify-center">
                          <select 
                             value={data.checkOutTime?.split(':')[0] || "00"} 
-                            onChange={(e) => handleTimeChange('out', `${e.target.value}:${data.checkInTime?.split(':')[1] || "00"}`)}
+                            onChange={(e) => handleTimeChange('out', `${e.target.value}:${data.checkOutTime?.split(':')[1] || "00"}`)}
                             className="bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-3 text-white text-lg font-black outline-none focus:border-orange-500 appearance-none text-center min-w-[60px]"
                          >
                             {hours.map(h => <option key={h} value={h}>{h}</option>)}

@@ -26,12 +26,12 @@ const SalaryHeader: React.FC<Props> = ({
     setIsEditing(field);
     const currentValue = config[field];
     const initialValue = currentValue !== undefined ? currentValue.toString() : "";
-    setTempValue(field.includes('Salary') ? formatInputNumber(initialValue) : initialValue);
+    setTempValue(field.includes('Salary') || field === 'baseSalary' || field === 'insuranceSalary' ? formatInputNumber(initialValue) : initialValue);
   }, [config]);
 
   const handleSave = () => {
     if (isEditing) {
-      const isCurrencyField = isEditing.includes('Salary');
+      const isCurrencyField = isEditing.includes('Salary') || isEditing === 'baseSalary';
       const val = isCurrencyField ? parseInputNumber(tempValue) : parseFloat(tempValue) || 0;
       onUpdate(isEditing, val);
       setIsEditing(null);
@@ -39,6 +39,8 @@ const SalaryHeader: React.FC<Props> = ({
   };
 
   const hasHolidayOT = summary.otHoursHolidayX2 > 0 || summary.otHoursHolidayX3 > 0 || summary.usedTetLeave > 0;
+  const annualLeaveLimit = config.totalAnnualLeave || 12;
+  const remainingLeave = Math.max(0, annualLeaveLimit - summary.usedAnnualLeave);
 
   return (
     <div className="bg-zinc-950 pt-12 pb-6 px-5 rounded-b-[3.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-b border-zinc-800/50 sticky top-0 z-50 glass-header">
@@ -100,8 +102,8 @@ const SalaryHeader: React.FC<Props> = ({
           <div className="grid grid-cols-4 gap-1 pt-4 border-t border-zinc-800/50">
             {[
                { key: 'baseSalary', label: 'Lương cơ bản', format: true },
-               { key: 'standardWorkDays', label: 'Ngày chuẩn', format: false },
-               { key: 'insuranceSalary', label: 'Lương BH', format: true },
+               { key: 'standardWorkDays', label: 'Công Chuẩn', format: false },
+               { key: 'totalAnnualLeave', label: 'Quỹ Phép Năm', format: false },
                { key: 'dependents', label: 'N.Phụ thuộc', format: false }
             ].map((field) => (
               <div key={field.key} onClick={() => startEdit(field.key as keyof SalaryConfig)} className="cursor-pointer group/item px-1 text-center">
@@ -117,7 +119,7 @@ const SalaryHeader: React.FC<Props> = ({
 
           <div className="grid grid-cols-2 gap-3 mt-6">
             <button onClick={() => setIsDetailed(!isDetailed)} className="flex items-center justify-center space-x-2 py-2.5 rounded-2xl border border-dashed text-zinc-500 border-zinc-800 transition-all hover:bg-zinc-800/20 active:scale-95">
-                <span className="text-[8px] font-black uppercase tracking-widest">{isDetailed ? 'Ẩn tăng ca' : 'Chi tiết OT'}</span>
+                <span className="text-[8px] font-black uppercase tracking-widest">{isDetailed ? 'Ẩn chi tiết' : 'Thống kê & OT'}</span>
                 <i className={`fa-solid fa-chevron-down text-[6px] transition-transform duration-500 ${isDetailed ? 'rotate-180' : ''}`}></i>
             </button>
             <button onClick={() => setShowTaxSection(!showTaxSection)} className={`flex items-center justify-center space-x-2 py-2.5 rounded-2xl border border-dashed transition-all active:scale-95 ${showTaxSection ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' : 'text-zinc-500 border-zinc-800'}`}>
@@ -129,33 +131,61 @@ const SalaryHeader: React.FC<Props> = ({
           {(isDetailed || showTaxSection) && (
             <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 {isDetailed && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-1.5 h-4 bg-amber-500 rounded-full"></div>
-                                <p className="text-[9px] text-white font-black uppercase tracking-widest">Thống kê tăng ca</p>
+                    <div className="space-y-6">
+                        {/* Thống kê OT */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-1.5 h-4 bg-amber-500 rounded-full"></div>
+                                    <p className="text-[9px] text-white font-black uppercase tracking-widest">Thống kê tăng ca</p>
+                                </div>
+                                <span className="text-[11px] text-amber-500 font-black">{formatCurrency(summary.otIncome)}</span>
                             </div>
-                            <span className="text-[11px] text-amber-500 font-black">{formatCurrency(summary.otIncome)}</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 pl-1">
-                            {[
-                                { label: 'Ngày thường (x1.5)', hours: summary.otHoursNormal, amount: summary.otAmountNormal, color: 'border-zinc-800/50', icon: 'fa-calendar-day' },
-                                { label: 'Chủ nhật (x2.0)', hours: summary.otHoursSunday, amount: summary.otAmountSunday, color: 'border-rose-900/30', icon: 'fa-calendar-check', textColor: 'text-rose-400' },
-                                { label: 'Lễ (8h - x2.0)', hours: summary.otHoursHolidayX2, amount: summary.otAmountHolidayX2, color: 'border-amber-900/30', icon: 'fa-star', textColor: 'text-amber-500' },
-                                { label: 'Lễ (Sau 8h - x3.0)', hours: summary.otHoursHolidayX3, amount: summary.otAmountHolidayX3, color: 'border-amber-900/50', icon: 'fa-bolt', textColor: 'text-amber-400' },
-                            ].map((item, idx) => (
-                                <div key={idx} className={`bg-zinc-950/40 p-3 rounded-2xl border ${item.color} flex flex-col justify-between h-full`}>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <i className={`fa-solid ${item.icon} text-[10px] opacity-30`}></i>
-                                        <span className="text-[8px] text-zinc-600 font-black uppercase tracking-tighter">{item.hours} GIỜ</span>
+                            
+                            <div className="grid grid-cols-2 gap-2 pl-1">
+                                {[
+                                    { label: 'Ngày thường (x1.5)', hours: summary.otHoursNormal, amount: summary.otAmountNormal, color: 'border-zinc-800/50', icon: 'fa-calendar-day' },
+                                    { label: 'Chủ nhật (x2.0)', hours: summary.otHoursSunday, amount: summary.otAmountSunday, color: 'border-rose-900/30', icon: 'fa-calendar-check', textColor: 'text-rose-400' },
+                                    { label: 'Lễ (8h - x2.0)', hours: summary.otHoursHolidayX2, amount: summary.otAmountHolidayX2, color: 'border-amber-900/30', icon: 'fa-star', textColor: 'text-amber-500' },
+                                    { label: 'Lễ (Sau 8h - x3.0)', hours: summary.otHoursHolidayX3, amount: summary.otAmountHolidayX3, color: 'border-amber-900/50', icon: 'fa-bolt', textColor: 'text-amber-400' },
+                                ].map((item, idx) => (
+                                    <div key={idx} className={`bg-zinc-950/40 p-3 rounded-2xl border ${item.color} flex flex-col justify-between h-full`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <i className={`fa-solid ${item.icon} text-[10px] opacity-30`}></i>
+                                            <span className="text-[8px] text-zinc-600 font-black uppercase tracking-tighter">{item.hours} GIỜ</span>
+                                        </div>
+                                        <div>
+                                            <p className={`text-[8px] font-black uppercase mb-0.5 leading-tight ${item.textColor || 'text-zinc-500'}`}>{item.label}</p>
+                                            <p className="text-[10px] text-white font-black">{formatCurrency(item.amount)}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className={`text-[8px] font-black uppercase mb-0.5 leading-tight ${item.textColor || 'text-zinc-500'}`}>{item.label}</p>
-                                        <p className="text-[10px] text-white font-black">{formatCurrency(item.amount)}</p>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Thống kê Nghỉ phép (NEW) */}
+                        <div className="space-y-3 pt-2 border-t border-zinc-800/30">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-1.5 h-4 bg-green-500 rounded-full"></div>
+                                <p className="text-[9px] text-white font-black uppercase tracking-widest">Thống kê Nghỉ phép</p>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 pl-1">
+                                <div className="bg-zinc-950/40 p-4 rounded-2xl border border-green-900/20 flex flex-col items-center text-center">
+                                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1 tracking-widest">Phép năm đã dùng</p>
+                                    <div className="flex items-baseline space-x-1">
+                                        <span className="text-xl font-black text-green-500">{summary.usedAnnualLeave}</span>
+                                        <span className="text-[8px] font-bold text-zinc-600 uppercase">Ngày</span>
                                     </div>
                                 </div>
-                            ))}
+                                <div className="bg-zinc-950/40 p-4 rounded-2xl border border-zinc-800/30 flex flex-col items-center text-center">
+                                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1 tracking-widest">Quỹ phép còn lại</p>
+                                    <div className="flex items-baseline space-x-1">
+                                        <span className="text-xl font-black text-white">{remainingLeave}</span>
+                                        <span className="text-[8px] font-bold text-zinc-600 uppercase">Ngày</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
