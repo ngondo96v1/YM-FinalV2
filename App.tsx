@@ -102,7 +102,7 @@ const App: React.FC = () => {
     
     setSelectedDay(existing || {
       date: dateStr,
-      shift: ShiftType.DAY, 
+      shift: date.getDay() === 0 ? ShiftType.NONE : ShiftType.DAY, 
       leave: LeaveType.NONE,
       overtimeHours: 0,
       isHoliday: false

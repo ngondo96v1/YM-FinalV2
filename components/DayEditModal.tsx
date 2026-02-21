@@ -20,9 +20,10 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
     if (holidayName && !day.isHoliday && isNewDay) {
         initialData.isHoliday = true;
     }
-    if (isSunday) {
+    // Nếu là ngày mới và là Chủ Nhật, mặc định là Nghỉ
+    if (isSunday && isNewDay) {
         initialData.leave = LeaveType.NONE;
-        initialData.shift = ShiftType.NONE; // Chủ nhật không chọn ca
+        initialData.shift = ShiftType.NONE;
     }
     return initialData;
   });
@@ -46,7 +47,6 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
   };
 
   const handleSelectShift = (type: ShiftType) => {
-    if (isSunday) return;
     let checkIn = "";
     let checkOut = "";
     if (type === ShiftType.DAY) { checkIn = "06:30"; checkOut = "14:30"; }
@@ -72,7 +72,9 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
       return {
         ...prev,
         [type === 'in' ? 'checkInTime' : 'checkOutTime']: val,
-        overtimeHours: ot
+        overtimeHours: ot,
+        // Nếu đang ở trạng thái Nghỉ mà chọn giờ thì chuyển sang trạng thái Làm việc (DAY)
+        shift: (isSunday && prev.shift === ShiftType.NONE) ? ShiftType.DAY : prev.shift
       };
     });
   };
@@ -124,16 +126,27 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
         </header>
 
         <div className="space-y-6 overflow-y-auto max-h-[75vh] no-scrollbar pb-10">
-          {!isSunday && (
-            <section>
-              <div className="flex justify-between items-center mb-3">
-                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Ca làm việc</p>
-                {data.shift !== ShiftType.NONE && (
-                   <span className="text-[9px] text-orange-500 font-black uppercase">Đã chọn ca</span>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[
+          <section>
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">
+                {isSunday ? 'Trạng thái Chủ Nhật' : 'Ca làm việc'}
+              </p>
+              {data.shift !== ShiftType.NONE && (
+                 <span className="text-[9px] text-orange-500 font-black uppercase">Đã chọn</span>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {isSunday ? (
+                <button 
+                  onClick={() => handleSelectShift(ShiftType.NONE)}
+                  className={`col-start-2 p-4 rounded-3xl flex flex-col items-center gap-1 border transition-all ${data.shift === ShiftType.NONE ? 'bg-orange-500 border-white/20 text-zinc-950 scale-105 shadow-xl' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
+                >
+                  <i className="fa-solid fa-couch text-sm"></i>
+                  <span className="text-[9px] font-black uppercase">Nghỉ</span>
+                  <span className="text-[7px] font-bold opacity-60">Ko làm</span>
+                </button>
+              ) : (
+                [
                   { type: ShiftType.DAY, label: 'Sáng', icon: 'fa-sun', desc: '06:30-14:30' },
                   { type: ShiftType.NIGHT, label: 'Đêm', icon: 'fa-moon', desc: '14:30-22:30' },
                   { type: ShiftType.NONE, label: 'Nghỉ', icon: 'fa-couch', desc: 'Ko làm' }
@@ -147,10 +160,10 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
                     <span className="text-[9px] font-black uppercase">{opt.label}</span>
                     <span className="text-[7px] font-bold opacity-60">{opt.desc}</span>
                   </button>
-                ))}
-              </div>
-            </section>
-          )}
+                ))
+              )}
+            </div>
+          </section>
 
           {(data.shift !== ShiftType.NONE || isSunday) && (
             <section className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2.5rem] space-y-6">
