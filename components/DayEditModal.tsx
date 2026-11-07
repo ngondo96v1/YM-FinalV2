@@ -16,10 +16,10 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
 
   const [data, setData] = useState<DayData>(() => {
     let initialData = { ...day };
-    const isNewDay = !day.checkInTime && day.leave === LeaveType.NONE;
-    if (holidayName && !day.isHoliday && isNewDay) {
+    if (holidayName) {
         initialData.isHoliday = true;
     }
+    const isNewDay = !day.checkInTime && day.leave === LeaveType.NONE;
     // Nếu là ngày mới và là Chủ Nhật, mặc định là Nghỉ
     if (isSunday && isNewDay) {
         initialData.leave = LeaveType.NONE;
@@ -116,9 +116,13 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
       const nightStr = detail.nightHours > 0 ? ` • Đêm: ${detail.nightHours}h (+30%)` : '';
       return `Tăng ca CN: ${detail.totalHours}h (x2.0)${nightStr} • +22.000đ Phụ cấp`;
     }
-    if (data.isHoliday) {
-      const nightStr = detail.nightHours > 0 ? ` • Đêm: ${detail.nightHours}h (+30%)` : '';
-      return `Làm việc Ngày Lễ: ${detail.totalHours}h${nightStr}`;
+    if (data.isHoliday || holidayName) {
+      const hPrefix = holidayName ? `${holidayName} • ` : '';
+      const nightStr = detail.nightHours > 0 ? ` (Đêm: ${detail.nightHours}h +30%)` : '';
+      if (data.shift === ShiftType.NONE) {
+        return `${hPrefix}Nghỉ lễ (Hưởng nguyên lương)`;
+      }
+      return `${hPrefix}Làm việc Ngày Lễ: ${detail.totalHours}h${nightStr}`;
     }
     if (data.shift === ShiftType.NONE) {
       return data.leave !== LeaveType.NONE ? 'Nghỉ phép / lễ' : 'Nghỉ (Ko làm)';
@@ -144,10 +148,10 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
         
         <header className="flex justify-between items-start mb-6">
           <div className="flex-1">
-            {data.isHoliday && (
-                <div className="inline-flex items-center space-x-2 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full mb-3">
-                    <i className="fa-solid fa-star text-[8px] text-red-500 animate-pulse"></i>
-                    <span className="text-[9px] text-red-500 font-black uppercase tracking-widest">{holidayName || 'NGÀY LỄ'}</span>
+            {(data.isHoliday || holidayName) && (
+                <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-red-500/20 to-amber-500/20 border border-red-500/30 px-3.5 py-1.5 rounded-full mb-3 shadow-lg shadow-red-500/10">
+                    <i className="fa-solid fa-flag text-[9px] text-red-500 animate-pulse"></i>
+                    <span className="text-[10px] text-amber-400 font-black uppercase tracking-widest">{holidayName || 'NGÀY LỄ'}</span>
                 </div>
             )}
             <h2 className={`text-2xl font-black tracking-tighter ${isSunday ? 'text-red-500' : 'text-white'}`}>{dateFormatted}</h2>

@@ -36,6 +36,34 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
     return { calendarDays: days, startDate: start, endDate: end };
   }, [targetYear, targetMonth]);
 
+  const cycleDateRangeStr = useMemo(() => {
+    const sD = String(startDate.getDate()).padStart(2, '0');
+    const sM = String(startDate.getMonth() + 1).padStart(2, '0');
+    const eD = String(endDate.getDate()).padStart(2, '0');
+    const eM = String(endDate.getMonth() + 1).padStart(2, '0');
+    const eY = endDate.getFullYear();
+    return `${sD}/${sM} – ${eD}/${eM}/${eY}`;
+  }, [startDate, endDate]);
+
+  const cycleHolidays = useMemo(() => {
+    const map = new Map<string, { date: Date; name: string; formattedDate: string }>();
+    calendarDays.forEach(d => {
+      if (!d) return;
+      const hName = getHolidayName(d);
+      if (hName) {
+        const key = toDateKey(d);
+        if (!map.has(key)) {
+          map.set(key, {
+            date: d,
+            name: hName,
+            formattedDate: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+          });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [calendarDays]);
+
   const changeCycle = (offset: number) => {
     const nextDate = new Date(targetYear, targetMonth + offset, 1);
     onViewDateChange(nextDate);
@@ -68,10 +96,11 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
         </button>
         
         <div className="text-center">
-            <button onClick={goTodayCycle} className="mb-2 inline-block px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[8px] font-black text-orange-500 uppercase tracking-widest active:scale-95 transition-transform">
+            <button onClick={goTodayCycle} className="mb-1.5 inline-block px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[8px] font-black text-orange-500 uppercase tracking-widest active:scale-95 transition-transform">
               Chu kỳ hiện tại
             </button>
             <h3 className="font-black text-white text-base tracking-tight leading-none uppercase">Tháng {targetMonth + 1}</h3>
+            <p className="text-[8px] text-zinc-500 font-bold tracking-wider mt-1">{cycleDateRangeStr}</p>
         </div>
 
         <button 
@@ -120,6 +149,7 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
             <div 
               key={date.getTime()}
               onClick={() => onDayClick(date)}
+              title={holidayName ? `${holidayName} (${date.toLocaleDateString('vi-VN')})` : undefined}
               className={`
                 aspect-square rounded-full flex flex-col items-center justify-center cursor-pointer transition-all relative group
                 ${isToday ? 'bg-orange-500 border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-110 z-20' : 
@@ -143,7 +173,10 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
                   </span>
                   
                   {isHoliday ? (
-                     <i className="fa-solid fa-crown text-[6px] text-yellow-500 mt-0.5 opacity-80 animate-soft-pulse"></i>
+                     <div className="flex flex-col items-center mt-0.5">
+                       <i className="fa-solid fa-crown text-[6px] text-yellow-500 opacity-90 animate-soft-pulse"></i>
+                       <span className="text-[5px] font-black text-amber-400 max-w-[34px] truncate leading-none mt-[1px]">LỄ</span>
+                     </div>
                   ) : (
                      <span className={`text-[6px] font-bold uppercase mt-0.5 ${isToday ? 'text-zinc-900/40' : (isSunday) ? 'text-red-500/40' : 'text-zinc-700'}`}>
                        T{date.getMonth() + 1}
@@ -185,6 +218,46 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
           <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Tết</span>
         </div>
       </div>
+
+      {/* Danh sách ngày Lễ trong chu kỳ hiển thị tên cụ thể */}
+      {cycleHolidays.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-zinc-800/60 space-y-2.5">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center space-x-2">
+              <i className="fa-solid fa-gift text-red-500 text-[11px]"></i>
+              <p className="text-[9px] font-black uppercase text-white tracking-widest">
+                Ngày Lễ trong chu kỳ ({cycleHolidays.length})
+              </p>
+            </div>
+            <span className="text-[7.5px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+              Hưởng 100% lương / OT x2.0
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {cycleHolidays.map((h, i) => (
+              <div 
+                key={i} 
+                onClick={() => onDayClick(h.date)}
+                className="flex items-center justify-between bg-zinc-950/80 hover:bg-zinc-900/90 border border-zinc-800/80 hover:border-red-500/40 p-3 rounded-2xl cursor-pointer transition-all active:scale-[0.98] group"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="px-2.5 py-1 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-black text-[10px] tracking-wider text-center min-w-[48px]">
+                    {h.formattedDate}
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-black text-white group-hover:text-amber-400 transition-colors">{h.name}</p>
+                    <p className="text-[7.5px] text-zinc-500 font-bold uppercase tracking-tight">Ngày lễ theo quy định Nhà nước</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1.5 text-zinc-500 group-hover:text-white transition-colors">
+                  <span className="text-[8px] font-black uppercase tracking-wider">Xem</span>
+                  <i className="fa-solid fa-chevron-right text-[7px]"></i>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

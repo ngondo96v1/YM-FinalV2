@@ -32,41 +32,116 @@ export const getPayrollRange = (targetYear: number, targetMonth: number) => {
   return { startDate, endDate };
 };
 
+// Ngày lễ cố định theo Dương lịch (hàng năm) theo Điều 112 Bộ luật Lao động & quy định mới nhất
 const FIXED_HOLIDAYS: Record<string, string> = {
   "01-01": "Tết Dương Lịch",
-  "30-04": "Giải Phóng Miền Nam",
-  "01-05": "Quốc Tế Lao Động",
-  "02-09": "Quốc Khánh",
-  "01-09": "Quốc Khánh (Nghỉ thêm)",
-  "03-09": "Quốc Khánh (Nghỉ bù/thêm)"
+  "30-04": "Giải Phóng Miền Nam (30/4)",
+  "01-05": "Quốc Tế Lao Động (1/5)",
+  "02-09": "Quốc Khánh (2/9)",
+  "01-09": "Nghỉ lễ Quốc Khánh",
+  "24-11": "Ngày Văn hóa Việt Nam (24/11)"
 };
 
+// Lịch nghỉ Lễ, Tết Nguyên Đán, Giỗ Tổ Hùng Vương, ngày nghỉ bù và ngày hoán đổi làm việc
+// theo các thông báo và quy định chính thức của Bộ Lao động - Thương binh & Xã hội và Quốc hội
 const MOVABLE_HOLIDAYS: Record<string, string> = {
-  "2024-02-08": "Nghỉ Tết Giáp Thìn",
-  "2024-02-09": "30 Tết Giáp Thìn",
+  // === NĂM 2024 ===
+  "2024-02-08": "Nghỉ Tết Giáp Thìn (29 Tết)",
+  "2024-02-09": "30 Tết Giáp Thìn (Giao thừa)",
   "2024-02-10": "Mùng 1 Tết Giáp Thìn",
   "2024-02-11": "Mùng 2 Tết Giáp Thìn",
   "2024-02-12": "Mùng 3 Tết Giáp Thìn",
-  "2024-02-13": "Nghỉ Tết Giáp Thìn",
-  "2024-02-14": "Nghỉ Tết Giáp Thìn",
-  "2024-04-18": "Giỗ tổ Hùng Vương",
-  "2025-01-26": "Nghỉ Tết Ất Tỵ",
-  "2025-01-27": "Nghỉ Tết Ất Tỵ",
-  "2025-01-28": "Giao thừa Ất Tỵ",
+  "2024-02-13": "Mùng 4 Tết Giáp Thìn (Nghỉ bù)",
+  "2024-02-14": "Mùng 5 Tết Giáp Thìn (Nghỉ bù)",
+  "2024-04-18": "Giỗ Tổ Hùng Vương (10/3 ÂL)",
+  "2024-04-29": "Hoán đổi ngày làm việc (Cầu nối 30/4)",
+  "2024-04-30": "Giải Phóng Miền Nam (30/4)",
+  "2024-05-01": "Quốc Tế Lao Động (1/5)",
+  "2024-09-02": "Quốc Khánh (2/9)",
+  "2024-09-03": "Nghỉ lễ Quốc Khánh (Nghỉ bù)",
+  "2024-11-24": "Ngày Văn hóa Việt Nam (24/11)",
+  "2024-11-25": "Nghỉ bù Ngày Văn hóa Việt Nam",
+
+  // === NĂM 2025 (Chính thức theo Thông báo số 6150/TB-BLĐTBXH) ===
+  "2025-01-25": "Nghỉ Tết Ất Tỵ (26 tháng Chạp)",
+  "2025-01-26": "Nghỉ Tết Ất Tỵ (27 tháng Chạp)",
+  "2025-01-27": "Nghỉ Tết Ất Tỵ (28 tháng Chạp)",
+  "2025-01-28": "Giao thừa Tết Ất Tỵ (29 tháng Chạp)",
   "2025-01-29": "Mùng 1 Tết Ất Tỵ",
   "2025-01-30": "Mùng 2 Tết Ất Tỵ",
   "2025-01-31": "Mùng 3 Tết Ất Tỵ",
-  "2025-02-01": "Nghỉ Tết Ất Tỵ",
-  "2025-02-02": "Nghỉ Tết Ất Tỵ",
-  "2025-04-07": "Giỗ tổ Hùng Vương"
+  "2025-02-01": "Mùng 4 Tết Ất Tỵ (Nghỉ bù)",
+  "2025-02-02": "Mùng 5 Tết Ất Tỵ (Nghỉ bù)",
+  "2025-04-07": "Giỗ Tổ Hùng Vương (10/3 ÂL)",
+  "2025-04-30": "Giải Phóng Miền Nam (30/4)",
+  "2025-05-01": "Quốc Tế Lao Động (1/5)",
+  "2025-05-02": "Hoán đổi ngày làm việc (Cầu nối 30/4 - 1/5)",
+  "2025-09-01": "Nghỉ lễ Quốc Khánh (Liền kề)",
+  "2025-09-02": "Quốc Khánh (2/9)",
+  "2025-11-24": "Ngày Văn hóa Việt Nam (24/11)",
+
+  // === NĂM 2026 (Năm hiện hành) ===
+  "2026-02-14": "Nghỉ Tết Bính Ngọ (27 tháng Chạp)",
+  "2026-02-15": "Nghỉ Tết Bính Ngọ (28 tháng Chạp)",
+  "2026-02-16": "29 Tết Bính Ngọ (Giao thừa)",
+  "2026-02-17": "Mùng 1 Tết Bính Ngọ",
+  "2026-02-18": "Mùng 2 Tết Bính Ngọ",
+  "2026-02-19": "Mùng 3 Tết Bính Ngọ",
+  "2026-02-20": "Mùng 4 Tết Bính Ngọ",
+  "2026-02-21": "Mùng 5 Tết Bính Ngọ (Nghỉ bù)",
+  "2026-02-22": "Mùng 6 Tết Bính Ngọ (Nghỉ bù)",
+  "2026-04-26": "Giỗ Tổ Hùng Vương (10/3 ÂL)",
+  "2026-04-27": "Nghỉ bù Giỗ Tổ Hùng Vương (do trùng CN)",
+  "2026-04-30": "Giải Phóng Miền Nam (30/4)",
+  "2026-05-01": "Quốc Tế Lao Động (1/5)",
+  "2026-08-31": "Hoán đổi ngày làm việc (Cầu nối 2/9)",
+  "2026-09-01": "Nghỉ lễ Quốc Khánh (Liền kề)",
+  "2026-09-02": "Quốc Khánh (2/9)",
+  "2026-11-24": "Ngày Văn hóa Việt Nam (24/11)",
+
+  // === NĂM 2027 ===
+  "2027-02-05": "29 Tết Đinh Mùi (Giao thừa)",
+  "2027-02-06": "Mùng 1 Tết Đinh Mùi",
+  "2027-02-07": "Mùng 2 Tết Đinh Mùi",
+  "2027-02-08": "Mùng 3 Tết Đinh Mùi",
+  "2027-02-09": "Mùng 4 Tết Đinh Mùi (Nghỉ bù)",
+  "2027-02-10": "Mùng 5 Tết Đinh Mùi (Nghỉ bù)",
+  "2027-04-16": "Giỗ Tổ Hùng Vương (10/3 ÂL)",
+  "2027-04-30": "Giải Phóng Miền Nam (30/4)",
+  "2027-05-01": "Quốc Tế Lao Động (1/5)",
+  "2027-05-03": "Nghỉ bù Quốc Tế Lao Động (do trùng T7)",
+  "2027-09-01": "Nghỉ lễ Quốc Khánh (Liền kề)",
+  "2027-09-02": "Quốc Khánh (2/9)",
+  "2027-09-03": "Nghỉ lễ Quốc Khánh (Nghỉ thêm)",
+  "2027-11-24": "Ngày Văn hóa Việt Nam (24/11)",
+
+  // === NĂM 2028 ===
+  "2028-01-24": "28 Tết Mậu Thân",
+  "2028-01-25": "29 Tết Mậu Thân (Giao thừa)",
+  "2028-01-26": "Mùng 1 Tết Mậu Thân",
+  "2028-01-27": "Mùng 2 Tết Mậu Thân",
+  "2028-01-28": "Mùng 3 Tết Mậu Thân",
+  "2028-01-29": "Mùng 4 Tết Mậu Thân (Nghỉ bù)",
+  "2028-01-30": "Mùng 5 Tết Mậu Thân (Nghỉ bù)",
+  "2028-04-04": "Giỗ Tổ Hùng Vương (10/3 ÂL)",
+  "2028-04-30": "Giải Phóng Miền Nam (30/4)",
+  "2028-05-01": "Quốc Tế Lao Động (1/5)",
+  "2028-05-02": "Nghỉ bù 30/4 (do trùng Chủ Nhật)",
+  "2028-09-01": "Nghỉ lễ Quốc Khánh (Liền kề)",
+  "2028-09-02": "Quốc Khánh (2/9)",
+  "2028-09-04": "Nghỉ bù Quốc Khánh (do trùng Thứ Bảy)",
+  "2028-11-24": "Ngày Văn hóa Việt Nam (24/11)"
 };
 
 export const getHolidayName = (date: Date): string | null => {
+  const fullKey = toDateKey(date);
+  if (MOVABLE_HOLIDAYS[fullKey]) {
+    return MOVABLE_HOLIDAYS[fullKey];
+  }
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const fixedKey = `${day}-${month}`;
-  const fullKey = toDateKey(date);
-  return FIXED_HOLIDAYS[fixedKey] || MOVABLE_HOLIDAYS[fullKey] || null;
+  return FIXED_HOLIDAYS[fixedKey] || null;
 };
 
 const calculatePIT = (taxableAmount: number): number => {

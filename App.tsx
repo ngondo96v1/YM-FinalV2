@@ -99,16 +99,25 @@ const App: React.FC = () => {
   const handleDayClick = useCallback((date: Date) => {
     const dateStr = toDateKey(date);
     const existing = daysData.find(d => d.date === dateStr);
+    const holidayName = getHolidayName(date);
+    const isSunday = date.getDay() === 0;
     
-    setSelectedDay(existing || {
-      date: dateStr,
-      shift: date.getDay() === 0 ? ShiftType.NONE : ShiftType.DAY, 
-      leave: LeaveType.NONE,
-      checkInTime: date.getDay() === 0 ? "" : "06:30",
-      checkOutTime: date.getDay() === 0 ? "" : "15:30",
-      overtimeHours: date.getDay() === 0 ? 0 : 1,
-      isHoliday: false
-    });
+    if (existing) {
+      setSelectedDay({
+        ...existing,
+        isHoliday: !!holidayName || existing.isHoliday
+      });
+    } else {
+      setSelectedDay({
+        date: dateStr,
+        shift: isSunday ? ShiftType.NONE : ShiftType.DAY, 
+        leave: LeaveType.NONE,
+        checkInTime: isSunday ? "" : "06:30",
+        checkOutTime: isSunday ? "" : "15:30",
+        overtimeHours: isSunday ? 0 : 1,
+        isHoliday: !!holidayName
+      });
+    }
     setIsEditModalOpen(true);
   }, [daysData]);
 
