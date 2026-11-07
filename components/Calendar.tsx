@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { DayData, ShiftType, LeaveType } from '../types';
-import { toDateKey, getPayrollRange, getHolidayName } from '../utils';
+import { toDateKey, getPayrollRange, getHolidayName, getWorkHoursDetail } from '../utils';
 
 interface Props {
   viewDate: Date;
@@ -99,21 +99,22 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
           const isHoliday = !!holidayName || !!status?.isHoliday;
           
           let otDisplayHours = 0;
-          if (status?.checkInTime && status?.checkOutTime) {
-            const [h1, m1] = status.checkInTime.split(':').map(Number);
-            const [h2, m2] = status.checkOutTime.split(':').map(Number);
-            let start = h1 * 60 + m1;
-            let end = h2 * 60 + m2;
-            if (end <= start) end += 24 * 60;
-            const total = (end - start) / 60;
-            
-            if (isHoliday) {
-              otDisplayHours = total;
-            } else if (isSunday) {
-              otDisplayHours = total; // Chủ nhật toàn bộ giờ là OT
-            } else {
-              otDisplayHours = Math.max(0, total - 8);
-            }
+          if (isSunday && status?.shift === ShiftType.NONE) {
+            otDisplayHours = 0;
+          } else if (status?.checkInTime && status?.checkOutTime) {
+            const detail = getWorkHoursDetail(
+              status.checkInTime,
+              status.checkOutTime,
+              isSunday,
+              isHoliday,
+              status.overtimeHours,
+              status.shift
+            );
+            const totalOT = detail.otNormalDayHours + detail.otNormalNightHours +
+              detail.otSundayDayHours + detail.otSundayNightHours +
+              detail.otHolidayDayX2Hours + detail.otHolidayNightX2Hours +
+              detail.otHolidayDayX3Hours + detail.otHolidayNightX3Hours;
+            otDisplayHours = Math.round(totalOT * 10) / 10;
           } else {
             otDisplayHours = status?.overtimeHours || 0;
           }

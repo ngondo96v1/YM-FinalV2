@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DayData, ShiftType, LeaveType } from '../types';
-import { getHolidayName } from '../utils';
+import { getHolidayName, getWorkHoursDetail } from '../utils';
 
 interface Props {
   day: DayData;
@@ -96,8 +96,39 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
     });
   };
 
-  const currentOT = data.overtimeHours || 0;
-  const displayTotal = isSunday || data.isHoliday ? currentOT : (data.shift !== ShiftType.NONE ? 8 : 0) + currentOT;
+  const detail = getWorkHoursDetail(
+    data.checkInTime,
+    data.checkOutTime,
+    isSunday,
+    data.isHoliday,
+    data.overtimeHours,
+    data.shift
+  );
+
+  const getStatusSubtitle = () => {
+    if (isSunday) {
+      if (data.shift === ShiftType.NONE) return 'Nghỉ Chủ Nhật (Không tính công/OT)';
+      const nightStr = detail.otSundayNightHours > 0 ? ` (Ngày: ${detail.otSundayDayHours}h, Đêm: ${detail.otSundayNightHours}h)` : '';
+      return `Tăng ca CN: ${detail.totalHours}h${nightStr} • +22.000đ Phụ cấp`;
+    }
+    if (data.isHoliday) {
+      const nightStr = (detail.otHolidayNightX2Hours + detail.otHolidayNightX3Hours) > 0 
+        ? ` (Đêm: ${detail.otHolidayNightX2Hours + detail.otHolidayNightX3Hours}h)` 
+        : '';
+      return `Làm việc Ngày Lễ: ${detail.totalHours}h${nightStr}`;
+    }
+    if (data.shift === ShiftType.NONE) {
+      return data.leave !== LeaveType.NONE ? 'Nghỉ phép / lễ' : 'Nghỉ (Ko làm)';
+    }
+    const otTotal = detail.otNormalDayHours + detail.otNormalNightHours;
+    if (otTotal > 0) {
+      const nightStr = detail.otNormalNightHours > 0 
+        ? ` (OT Ngày: ${detail.otNormalDayHours}h, Đêm: ${detail.otNormalNightHours}h)` 
+        : ` (OT: ${detail.otNormalDayHours}h)`;
+      return `Tổng làm việc: ${detail.totalHours}h${nightStr}`;
+    }
+    return `Tổng làm việc: ${detail.totalHours}h`;
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
@@ -117,7 +148,7 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
             )}
             <h2 className={`text-2xl font-black tracking-tighter ${isSunday ? 'text-red-500' : 'text-white'}`}>{dateFormatted}</h2>
             <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mt-1">
-               {displayTotal > 0 ? (isSunday ? `Tăng ca Chủ Nhật: ${currentOT}h` : `Tổng làm việc: ${displayTotal}h (OT: ${currentOT}h)`) : 'Chưa có giờ làm'}
+               {getStatusSubtitle()}
             </p>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-400">
@@ -168,8 +199,14 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
           {(data.shift !== ShiftType.NONE || isSunday) && (
             <section className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2.5rem] space-y-6">
                 <div className="flex justify-between items-center">
-                   <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Giờ Vào & Ra {isSunday && '(OT x2.0)'}</p>
-                   {!isSunday && (
+                   <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+                     Giờ Vào & Ra {isSunday ? '(CN: Ngày x2.0, Đêm x2.7)' : '(Đêm: 22h-6h x2.0)'}
+                   </p>
+                   {isSunday ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        +22.000đ Phụ cấp
+                      </span>
+                   ) : (
                       <button onClick={() => { const newH = !data.isHoliday; setData(d => ({ ...d, isHoliday: newH, overtimeHours: calculateOT(data.checkInTime, data.checkOutTime) })); }} className={`w-10 h-6 rounded-full relative transition-all ${data.isHoliday ? 'bg-red-600' : 'bg-zinc-800'}`}>
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${data.isHoliday ? 'left-5' : 'left-1'}`}></div>
                       </button>
