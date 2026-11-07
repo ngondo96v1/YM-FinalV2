@@ -53,21 +53,9 @@ export interface PayrollSummary {
   otAmountHolidayX2: number;
   otAmountHolidayX3: number;
 
-  // Chi tiết OT ngày và OT đêm (Theo Điều 98 BLLĐ 2019 & NĐ 145/2020)
-  otHoursNormalDay: number;
-  otHoursNormalNight: number;
-  otAmountNormalDay: number;
-  otAmountNormalNight: number;
-
-  otHoursSundayDay: number;
-  otHoursSundayNight: number;
-  otAmountSundayDay: number;
-  otAmountSundayNight: number;
-
-  otHoursHolidayNightX2?: number;
-  otHoursHolidayNightX3?: number;
-  otAmountHolidayNightX2?: number;
-  otAmountHolidayNightX3?: number;
+  // Giờ làm việc ban đêm (22h - 6h) hưởng phụ cấp +30%
+  totalNightHours: number;
+  nightShiftAllowance: number;
 
   // Phụ cấp đi làm ngày Chủ Nhật (22.000đ/ngày)
   workedSundaysCount: number;

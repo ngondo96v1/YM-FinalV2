@@ -104,7 +104,9 @@ const App: React.FC = () => {
       date: dateStr,
       shift: date.getDay() === 0 ? ShiftType.NONE : ShiftType.DAY, 
       leave: LeaveType.NONE,
-      overtimeHours: 0,
+      checkInTime: date.getDay() === 0 ? "" : "06:30",
+      checkOutTime: date.getDay() === 0 ? "" : "15:30",
+      overtimeHours: date.getDay() === 0 ? 0 : 1,
       isHoliday: false
     });
     setIsEditModalOpen(true);

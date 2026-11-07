@@ -110,10 +110,7 @@ const Calendar: React.FC<Props> = ({ viewDate, onViewDateChange, onDayClick, day
               status.overtimeHours,
               status.shift
             );
-            const totalOT = detail.otNormalDayHours + detail.otNormalNightHours +
-              detail.otSundayDayHours + detail.otSundayNightHours +
-              detail.otHolidayDayX2Hours + detail.otHolidayNightX2Hours +
-              detail.otHolidayDayX3Hours + detail.otHolidayNightX3Hours;
+            const totalOT = detail.otNormalHours + detail.otSundayHours + detail.otHolidayX2Hours + detail.otHolidayX3Hours;
             otDisplayHours = Math.round(totalOT * 10) / 10;
           } else {
             otDisplayHours = status?.overtimeHours || 0;

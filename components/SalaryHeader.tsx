@@ -146,10 +146,8 @@ const SalaryHeader: React.FC<Props> = ({
                             
                             <div className="grid grid-cols-2 gap-2 pl-1">
                                 {[
-                                    { label: 'Ngày thường (x1.5)', hours: summary.otHoursNormalDay, amount: summary.otAmountNormalDay, color: 'border-zinc-800/50', icon: 'fa-calendar-day' },
-                                    { label: 'OT Đêm thường (x2.0)', hours: summary.otHoursNormalNight, amount: summary.otAmountNormalNight, color: 'border-indigo-900/40', icon: 'fa-moon', textColor: 'text-indigo-400' },
-                                    { label: 'Chủ nhật Ngày (x2.0)', hours: summary.otHoursSundayDay, amount: summary.otAmountSundayDay, color: 'border-rose-900/30', icon: 'fa-calendar-check', textColor: 'text-rose-400' },
-                                    { label: 'Chủ nhật Đêm (x2.7)', hours: summary.otHoursSundayNight, amount: summary.otAmountSundayNight, color: 'border-purple-900/40', icon: 'fa-cloud-moon', textColor: 'text-purple-400' },
+                                    { label: 'Ngày thường (x1.5)', hours: summary.otHoursNormal, amount: summary.otAmountNormal, color: 'border-zinc-800/50', icon: 'fa-calendar-day' },
+                                    { label: 'Chủ nhật (x2.0)', hours: summary.otHoursSunday, amount: summary.otAmountSunday, color: 'border-rose-900/30', icon: 'fa-calendar-check', textColor: 'text-rose-400' },
                                     { label: 'Lễ (8h - x2.0)', hours: summary.otHoursHolidayX2, amount: summary.otAmountHolidayX2, color: 'border-amber-900/30', icon: 'fa-star', textColor: 'text-amber-500' },
                                     { label: 'Lễ (Sau 8h - x3.0)', hours: summary.otHoursHolidayX3, amount: summary.otAmountHolidayX3, color: 'border-amber-900/50', icon: 'fa-bolt', textColor: 'text-amber-400' },
                                 ].map((item, idx) => (
@@ -183,6 +181,26 @@ const SalaryHeader: React.FC<Props> = ({
                                 </div>
                                 <span className={`text-[11px] font-black ${summary.sundayAllowance > 0 ? 'text-rose-400' : 'text-zinc-600'}`}>
                                     +{formatCurrency(summary.sundayAllowance)}
+                                </span>
+                            </div>
+
+                            {/* Phụ cấp ca đêm (22h - 6h) */}
+                            <div className="bg-zinc-950/60 p-3.5 rounded-2xl border border-indigo-900/30 flex items-center justify-between pl-3 pr-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs">
+                                        <i className="fa-solid fa-moon"></i>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase text-white tracking-wider">Phụ cấp ca đêm (22h - 6h)</p>
+                                        <p className="text-[7.5px] font-bold text-zinc-500 uppercase tracking-tighter">
+                                            {summary.totalNightHours > 0 
+                                                ? `${summary.totalNightHours} giờ ca đêm • +30% lương giờ` 
+                                                : '+30% lương giờ (Khung giờ 22h - 6h)'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`text-[11px] font-black ${summary.nightShiftAllowance > 0 ? 'text-indigo-400' : 'text-zinc-600'}`}>
+                                    +{formatCurrency(summary.nightShiftAllowance)}
                                 </span>
                             </div>
                         </div>

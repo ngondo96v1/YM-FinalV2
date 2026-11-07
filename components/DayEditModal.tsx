@@ -24,6 +24,11 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
     if (isSunday && isNewDay) {
         initialData.leave = LeaveType.NONE;
         initialData.shift = ShiftType.NONE;
+    } else if (!isSunday && isNewDay && !initialData.checkInTime) {
+        initialData.checkInTime = "06:30";
+        initialData.checkOutTime = "15:30";
+        initialData.shift = ShiftType.DAY;
+        initialData.overtimeHours = 1;
     }
     return initialData;
   });
@@ -49,8 +54,8 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
   const handleSelectShift = (type: ShiftType) => {
     let checkIn = "";
     let checkOut = "";
-    if (type === ShiftType.DAY) { checkIn = "06:30"; checkOut = "14:30"; }
-    else if (type === ShiftType.NIGHT) { checkIn = "14:30"; checkOut = "22:30"; }
+    if (type === ShiftType.DAY) { checkIn = "06:30"; checkOut = "15:30"; }
+    else if (type === ShiftType.NIGHT) { checkIn = "14:30"; checkOut = "23:30"; }
 
     const ot = calculateOT(checkIn, checkOut);
 
@@ -108,26 +113,25 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
   const getStatusSubtitle = () => {
     if (isSunday) {
       if (data.shift === ShiftType.NONE) return 'Nghỉ Chủ Nhật (Không tính công/OT)';
-      const nightStr = detail.otSundayNightHours > 0 ? ` (Ngày: ${detail.otSundayDayHours}h, Đêm: ${detail.otSundayNightHours}h)` : '';
-      return `Tăng ca CN: ${detail.totalHours}h${nightStr} • +22.000đ Phụ cấp`;
+      const nightStr = detail.nightHours > 0 ? ` • Đêm: ${detail.nightHours}h (+30%)` : '';
+      return `Tăng ca CN: ${detail.totalHours}h (x2.0)${nightStr} • +22.000đ Phụ cấp`;
     }
     if (data.isHoliday) {
-      const nightStr = (detail.otHolidayNightX2Hours + detail.otHolidayNightX3Hours) > 0 
-        ? ` (Đêm: ${detail.otHolidayNightX2Hours + detail.otHolidayNightX3Hours}h)` 
-        : '';
+      const nightStr = detail.nightHours > 0 ? ` • Đêm: ${detail.nightHours}h (+30%)` : '';
       return `Làm việc Ngày Lễ: ${detail.totalHours}h${nightStr}`;
     }
     if (data.shift === ShiftType.NONE) {
       return data.leave !== LeaveType.NONE ? 'Nghỉ phép / lễ' : 'Nghỉ (Ko làm)';
     }
-    const otTotal = detail.otNormalDayHours + detail.otNormalNightHours;
-    if (otTotal > 0) {
-      const nightStr = detail.otNormalNightHours > 0 
-        ? ` (OT Ngày: ${detail.otNormalDayHours}h, Đêm: ${detail.otNormalNightHours}h)` 
-        : ` (OT: ${detail.otNormalDayHours}h)`;
-      return `Tổng làm việc: ${detail.totalHours}h${nightStr}`;
+    const parts: string[] = [];
+    if (detail.otNormalHours > 0) {
+      parts.push(`OT: ${detail.otNormalHours}h (x1.5)`);
     }
-    return `Tổng làm việc: ${detail.totalHours}h`;
+    if (detail.nightHours > 0) {
+      parts.push(`Đêm: ${detail.nightHours}h (+30%)`);
+    }
+    const breakdownStr = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+    return `Tổng làm việc: ${detail.totalHours}h${breakdownStr}`;
   };
 
   return (
@@ -178,8 +182,8 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
                 </button>
               ) : (
                 [
-                  { type: ShiftType.DAY, label: 'Sáng', icon: 'fa-sun', desc: '06:30-14:30' },
-                  { type: ShiftType.NIGHT, label: 'Đêm', icon: 'fa-moon', desc: '14:30-22:30' },
+                  { type: ShiftType.DAY, label: 'Sáng', icon: 'fa-sun', desc: '06:30-15:30' },
+                  { type: ShiftType.NIGHT, label: 'Đêm', icon: 'fa-moon', desc: '14:30-23:30' },
                   { type: ShiftType.NONE, label: 'Nghỉ', icon: 'fa-couch', desc: 'Ko làm' }
                 ].map(opt => (
                   <button 
@@ -200,7 +204,7 @@ const DayEditModal: React.FC<Props> = ({ day, onClose, onSave }) => {
             <section className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2.5rem] space-y-6">
                 <div className="flex justify-between items-center">
                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
-                     Giờ Vào & Ra {isSunday ? '(CN: Ngày x2.0, Đêm x2.7)' : '(Đêm: 22h-6h x2.0)'}
+                     Giờ Vào & Ra {isSunday ? '(CN tính OT x2.0 + Đêm +30%)' : '(Khung 22h-6h hưởng +30%)'}
                    </p>
                    {isSunday ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">

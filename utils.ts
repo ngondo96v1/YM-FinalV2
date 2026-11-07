@@ -84,25 +84,20 @@ export const SUNDAY_ALLOWANCE_RATE = 22000;
 
 export interface WorkHoursDetail {
   totalHours: number;
-  // Overtime Ngày thường
-  otNormalDayHours: number;
-  otNormalNightHours: number;
-  // Overtime Chủ Nhật
-  otSundayDayHours: number;
-  otSundayNightHours: number;
+  // Số giờ làm trong khung giờ đêm (22h00 - 06h00) hưởng phụ cấp +30%
+  nightHours: number;
+  // Overtime Ngày thường (150%)
+  otNormalHours: number;
+  // Overtime Chủ Nhật (200%)
+  otSundayHours: number;
   // Overtime Ngày Lễ
-  otHolidayDayX2Hours: number;
-  otHolidayNightX2Hours: number;
-  otHolidayDayX3Hours: number;
-  otHolidayNightX3Hours: number;
+  otHolidayX2Hours: number;
+  otHolidayX3Hours: number;
 }
 
 /**
- * Tách giờ làm việc và tính OT ngày / OT đêm theo đúng Bộ luật Lao động Việt Nam 2019:
- * - Khung giờ ban đêm: 22h00 đến 06h00 hôm sau (Điều 106 BLLĐ).
- * - Làm thêm ngày thường: Ban ngày 150% (x1.5), Ban đêm 200% (x2.0 = 150% + 30% + 20%).
- * - Làm thêm Chủ Nhật: Ban ngày 200% (x2.0), Ban đêm 270% (x2.7 = 200% + 30% + 40%).
- * - Làm thêm Ngày Lễ: 8h đầu (Ngày x2.0, Đêm x2.7), Sau 8h (Ngày x3.0, Đêm x3.9 = 300% + 30% + 60%).
+ * Tách giờ làm việc và tính OT ngày thường (150%), Chủ Nhật (200%), Ngày Lễ (200%/300%)
+ * và phụ cấp làm việc ban đêm (30% cho mọi giờ rơi vào khung 22h00 – 06h00).
  */
 export const getWorkHoursDetail = (
   checkInTime?: string,
@@ -112,14 +107,11 @@ export const getWorkHoursDetail = (
   manualOT: number = 0,
   shift: ShiftType = ShiftType.NONE
 ): WorkHoursDetail => {
-  let otNormalDayHours = 0;
-  let otNormalNightHours = 0;
-  let otSundayDayHours = 0;
-  let otSundayNightHours = 0;
-  let otHolidayDayX2Hours = 0;
-  let otHolidayNightX2Hours = 0;
-  let otHolidayDayX3Hours = 0;
-  let otHolidayNightX3Hours = 0;
+  let nightHours = 0;
+  let otNormalHours = 0;
+  let otSundayHours = 0;
+  let otHolidayX2Hours = 0;
+  let otHolidayX3Hours = 0;
   let totalHours = 0;
 
   const hasCheckTimes = !!(checkInTime && checkOutTime && (shift !== ShiftType.NONE || isSunday));
@@ -134,49 +126,30 @@ export const getWorkHoursDetail = (
     const totalMinutes = end - start;
     totalHours = totalMinutes / 60;
 
-    let normalDayMin = 0;
-    let normalNightMin = 0;
-    let sundayDayMin = 0;
-    let sundayNightMin = 0;
-    let holidayDayX2Min = 0;
-    let holidayNightX2Min = 0;
-    let holidayDayX3Min = 0;
-    let holidayNightX3Min = 0;
+    let nightMinutes = 0;
 
     for (let m = start; m < end; m++) {
       const t = m % 1440;
-      // Ban đêm: trước 06:00 hoặc từ 22:00 trở đi
-      const isNight = t < 360 || t >= 1320;
-      const minuteIndex = m - start;
-
-      if (isHoliday) {
-        if (minuteIndex < 480) {
-          if (isNight) holidayNightX2Min++;
-          else holidayDayX2Min++;
-        } else {
-          if (isNight) holidayNightX3Min++;
-          else holidayDayX3Min++;
-        }
-      } else if (isSunday) {
-        if (isNight) sundayNightMin++;
-        else sundayDayMin++;
-      } else {
-        // Ngày thường: 8h đầu (480 phút) là ca chuẩn, sau 8h là làm thêm giờ (OT)
-        if (minuteIndex >= 480) {
-          if (isNight) normalNightMin++;
-          else normalDayMin++;
-        }
+      // Khung giờ ban đêm: từ 22:00 hôm trước đến 06:00 sáng hôm sau
+      if (t < 360 || t >= 1320) {
+        nightMinutes++;
       }
     }
 
-    otNormalDayHours = normalDayMin / 60;
-    otNormalNightHours = normalNightMin / 60;
-    otSundayDayHours = sundayDayMin / 60;
-    otSundayNightHours = sundayNightMin / 60;
-    otHolidayDayX2Hours = holidayDayX2Min / 60;
-    otHolidayNightX2Hours = holidayNightX2Min / 60;
-    otHolidayDayX3Hours = holidayDayX3Min / 60;
-    otHolidayNightX3Hours = holidayNightX3Min / 60;
+    nightHours = nightMinutes / 60;
+
+    if (isHoliday) {
+      const h8Min = Math.min(480, totalMinutes);
+      const hOTMin = Math.max(0, totalMinutes - 480);
+      otHolidayX2Hours = h8Min / 60;
+      otHolidayX3Hours = hOTMin / 60;
+    } else if (isSunday) {
+      otSundayHours = totalMinutes / 60;
+    } else {
+      // Ngày thường: 8h đầu là ca chuẩn, sau 8h là giờ tăng ca (150%)
+      const otMin = Math.max(0, totalMinutes - 480);
+      otNormalHours = otMin / 60;
+    }
   } else {
     // Fallback khi chỉ nhập OT thủ công
     if (shift !== ShiftType.NONE || isSunday) {
@@ -189,26 +162,23 @@ export const getWorkHoursDetail = (
 
     if (manualOT > 0) {
       if (isHoliday) {
-        otHolidayDayX2Hours = Math.min(8, manualOT);
-        otHolidayDayX3Hours = Math.max(0, manualOT - 8);
+        otHolidayX2Hours = Math.min(8, manualOT);
+        otHolidayX3Hours = Math.max(0, manualOT - 8);
       } else if (isSunday) {
-        otSundayDayHours = manualOT;
+        otSundayHours = manualOT;
       } else {
-        otNormalDayHours = manualOT;
+        otNormalHours = manualOT;
       }
     }
   }
 
   return {
     totalHours,
-    otNormalDayHours: Math.round(otNormalDayHours * 100) / 100,
-    otNormalNightHours: Math.round(otNormalNightHours * 100) / 100,
-    otSundayDayHours: Math.round(otSundayDayHours * 100) / 100,
-    otSundayNightHours: Math.round(otSundayNightHours * 100) / 100,
-    otHolidayDayX2Hours: Math.round(otHolidayDayX2Hours * 100) / 100,
-    otHolidayNightX2Hours: Math.round(otHolidayNightX2Hours * 100) / 100,
-    otHolidayDayX3Hours: Math.round(otHolidayDayX3Hours * 100) / 100,
-    otHolidayNightX3Hours: Math.round(otHolidayNightX3Hours * 100) / 100,
+    nightHours: Math.round(nightHours * 100) / 100,
+    otNormalHours: Math.round(otNormalHours * 100) / 100,
+    otSundayHours: Math.round(otSundayHours * 100) / 100,
+    otHolidayX2Hours: Math.round(otHolidayX2Hours * 100) / 100,
+    otHolidayX3Hours: Math.round(otHolidayX3Hours * 100) / 100,
   };
 };
 
@@ -238,17 +208,11 @@ export const calculatePayroll = (
   let usedAnnualLeave = 0, usedSickLeave = 0, usedTetLeave = 0;
   let workedSundaysCount = 0;
 
-  let otHoursNormalDay = 0, otHoursNormalNight = 0;
-  let otAmountNormalDay = 0, otAmountNormalNight = 0;
-
-  let otHoursSundayDay = 0, otHoursSundayNight = 0;
-  let otAmountSundayDay = 0, otAmountSundayNight = 0;
-
-  let otHoursHolidayDayX2 = 0, otHoursHolidayNightX2 = 0;
-  let otAmountHolidayDayX2 = 0, otAmountHolidayNightX2 = 0;
-
-  let otHoursHolidayDayX3 = 0, otHoursHolidayNightX3 = 0;
-  let otAmountHolidayDayX3 = 0, otAmountHolidayNightX3 = 0;
+  let totalNormalOTHours = 0;
+  let totalSundayOTHours = 0;
+  let totalHolidayX2Hours = 0;
+  let totalHolidayX3Hours = 0;
+  let totalNightHours = 0;
 
   let taxExemptOT = 0;
 
@@ -283,84 +247,40 @@ export const calculatePayroll = (
       workedSundaysCount++;
     }
 
-    // 1. Ngày thường:
-    // OT ngày: 150% (x1.5). Miễn thuế: 0.5 x otHourlyRate
-    if (detail.otNormalDayHours > 0) {
-      const pay = detail.otNormalDayHours * 1.5 * otHourlyRate;
-      otHoursNormalDay += detail.otNormalDayHours;
-      otAmountNormalDay += pay;
-      taxExemptOT += (pay - detail.otNormalDayHours * otHourlyRate);
-    }
-    // OT đêm: 200% (x2.0 theo Điều 98 BLLĐ). Miễn thuế: 1.0 x otHourlyRate
-    if (detail.otNormalNightHours > 0) {
-      const pay = detail.otNormalNightHours * 2.0 * otHourlyRate;
-      otHoursNormalNight += detail.otNormalNightHours;
-      otAmountNormalNight += pay;
-      taxExemptOT += (pay - detail.otNormalNightHours * otHourlyRate);
-    }
-
-    // 2. Chủ Nhật:
-    // OT ngày CN: 200% (x2.0). Miễn thuế: 1.0 x otHourlyRate
-    if (detail.otSundayDayHours > 0) {
-      const pay = detail.otSundayDayHours * 2.0 * otHourlyRate;
-      otHoursSundayDay += detail.otSundayDayHours;
-      otAmountSundayDay += pay;
-      taxExemptOT += (pay - detail.otSundayDayHours * otHourlyRate);
-    }
-    // OT đêm CN: 270% (x2.7 theo NĐ 145/2020: 200% + 30% + 40%). Miễn thuế: 1.7 x otHourlyRate
-    if (detail.otSundayNightHours > 0) {
-      const pay = detail.otSundayNightHours * 2.7 * otHourlyRate;
-      otHoursSundayNight += detail.otSundayNightHours;
-      otAmountSundayNight += pay;
-      taxExemptOT += (pay - detail.otSundayNightHours * otHourlyRate);
-    }
-
-    // 3. Ngày Lễ:
-    // Ca 8h đầu:
-    if (detail.otHolidayDayX2Hours > 0) {
-      const pay = detail.otHolidayDayX2Hours * 2.0 * otHourlyRate;
-      otHoursHolidayDayX2 += detail.otHolidayDayX2Hours;
-      otAmountHolidayDayX2 += pay;
-      taxExemptOT += (pay - detail.otHolidayDayX2Hours * otHourlyRate);
-    }
-    if (detail.otHolidayNightX2Hours > 0) {
-      const pay = detail.otHolidayNightX2Hours * 2.7 * otHourlyRate;
-      otHoursHolidayNightX2 += detail.otHolidayNightX2Hours;
-      otAmountHolidayNightX2 += pay;
-      taxExemptOT += (pay - detail.otHolidayNightX2Hours * otHourlyRate);
-    }
-    // Sau 8h:
-    if (detail.otHolidayDayX3Hours > 0) {
-      const pay = detail.otHolidayDayX3Hours * 3.0 * otHourlyRate;
-      otHoursHolidayDayX3 += detail.otHolidayDayX3Hours;
-      otAmountHolidayDayX3 += pay;
-      taxExemptOT += (pay - detail.otHolidayDayX3Hours * otHourlyRate);
-    }
-    if (detail.otHolidayNightX3Hours > 0) {
-      const pay = detail.otHolidayNightX3Hours * 3.9 * otHourlyRate;
-      otHoursHolidayNightX3 += detail.otHolidayNightX3Hours;
-      otAmountHolidayNightX3 += pay;
-      taxExemptOT += (pay - detail.otHolidayNightX3Hours * otHourlyRate);
-    }
+    totalNormalOTHours += detail.otNormalHours;
+    totalSundayOTHours += detail.otSundayHours;
+    totalHolidayX2Hours += detail.otHolidayX2Hours;
+    totalHolidayX3Hours += detail.otHolidayX3Hours;
+    totalNightHours += detail.nightHours;
   });
 
-  const otAmountNormal = otAmountNormalDay + otAmountNormalNight;
-  const otHoursNormal = otHoursNormalDay + otHoursNormalNight;
+  // 1. Tiền tăng ca (OT):
+  // Ngày thường 150% (x1.5):
+  const otAmountNormal = totalNormalOTHours * 1.5 * otHourlyRate;
+  // Chủ nhật 200% (x2.0):
+  const otAmountSunday = totalSundayOTHours * 2.0 * otHourlyRate;
+  // Ngày lễ 8h đầu 200% (x2.0):
+  const otAmountHolidayX2 = totalHolidayX2Hours * 2.0 * otHourlyRate;
+  // Ngày lễ sau 8h 300% (x3.0):
+  const otAmountHolidayX3 = totalHolidayX3Hours * 3.0 * otHourlyRate;
 
-  const otAmountSunday = otAmountSundayDay + otAmountSundayNight;
-  const otHoursSunday = otHoursSundayDay + otHoursSundayNight;
-
-  const otAmountHolidayX2 = otAmountHolidayDayX2 + otAmountHolidayNightX2;
-  const otHoursHolidayX2 = otHoursHolidayDayX2 + otHoursHolidayNightX2;
-
-  const otAmountHolidayX3 = otAmountHolidayDayX3 + otAmountHolidayNightX3;
-  const otHoursHolidayX3 = otHoursHolidayDayX3 + otHoursHolidayNightX3;
-
-  const totalOTHours = otHoursNormal + otHoursSunday + otHoursHolidayX2 + otHoursHolidayX3;
+  const totalOTHours = totalNormalOTHours + totalSundayOTHours + totalHolidayX2Hours + totalHolidayX3Hours;
   const totalOtIncome = otAmountNormal + otAmountSunday + otAmountHolidayX2 + otAmountHolidayX3;
 
-  // Phụ cấp đi làm ngày Chủ Nhật: 22.000đ / ngày đi làm
+  // 2. Phụ cấp ca đêm (30% tiền lương giờ cho mọi giờ làm trong khung 22h - 6h):
+  const nightShiftAllowance = totalNightHours * 0.3 * otHourlyRate;
+
+  // 3. Phụ cấp đi làm ngày Chủ Nhật: 22.000đ / ngày đi làm
   const sundayAllowance = workedSundaysCount * SUNDAY_ALLOWANCE_RATE;
+
+  // 4. Miễn thuế TNCN theo Thông tư 111/2013/TT-BTC:
+  // Phần OT vượt mức 100%:
+  taxExemptOT += (totalNormalOTHours * 0.5 * otHourlyRate);
+  taxExemptOT += (totalSundayOTHours * 1.0 * otHourlyRate);
+  taxExemptOT += (totalHolidayX2Hours * 1.0 * otHourlyRate);
+  taxExemptOT += (totalHolidayX3Hours * 2.0 * otHourlyRate);
+  // Toàn bộ phụ cấp đêm 30% được miễn thuế:
+  taxExemptOT += nightShiftAllowance;
 
   const baseIncome = totalWorkDays * dailyRate;
   
@@ -369,7 +289,7 @@ export const calculatePayroll = (
   // Cộng thêm phụ cấp Chủ Nhật vào tổng phụ cấp
   totalAllowances += sundayAllowance;
 
-  const grossIncome = baseIncome + totalOtIncome + totalAllowances;
+  const grossIncome = baseIncome + totalOtIncome + totalAllowances + nightShiftAllowance;
   const insuranceDeduction = insuranceSalary * 0.105;
   const personalRelief = 11000000;
   const dependentRelief = dependentCount * 4400000;
@@ -383,30 +303,18 @@ export const calculatePayroll = (
   return {
     totalWorkDays,
     totalOTHours: Math.round(totalOTHours * 10) / 10,
-    otHoursNormal: Math.round(otHoursNormal * 10) / 10,
-    otHoursSunday: Math.round(otHoursSunday * 10) / 10,
-    otHoursHolidayX2: Math.round(otHoursHolidayX2 * 10) / 10,
-    otHoursHolidayX3: Math.round(otHoursHolidayX3 * 10) / 10,
+    otHoursNormal: Math.round(totalNormalOTHours * 10) / 10,
+    otHoursSunday: Math.round(totalSundayOTHours * 10) / 10,
+    otHoursHolidayX2: Math.round(totalHolidayX2Hours * 10) / 10,
+    otHoursHolidayX3: Math.round(totalHolidayX3Hours * 10) / 10,
 
     otAmountNormal: Math.round(otAmountNormal),
     otAmountSunday: Math.round(otAmountSunday),
     otAmountHolidayX2: Math.round(otAmountHolidayX2),
     otAmountHolidayX3: Math.round(otAmountHolidayX3),
 
-    otHoursNormalDay: Math.round(otHoursNormalDay * 10) / 10,
-    otHoursNormalNight: Math.round(otHoursNormalNight * 10) / 10,
-    otAmountNormalDay: Math.round(otAmountNormalDay),
-    otAmountNormalNight: Math.round(otAmountNormalNight),
-
-    otHoursSundayDay: Math.round(otHoursSundayDay * 10) / 10,
-    otHoursSundayNight: Math.round(otHoursSundayNight * 10) / 10,
-    otAmountSundayDay: Math.round(otAmountSundayDay),
-    otAmountSundayNight: Math.round(otAmountSundayNight),
-
-    otHoursHolidayNightX2: Math.round(otHoursHolidayNightX2 * 10) / 10,
-    otHoursHolidayNightX3: Math.round(otHoursHolidayNightX3 * 10) / 10,
-    otAmountHolidayNightX2: Math.round(otAmountHolidayNightX2),
-    otAmountHolidayNightX3: Math.round(otAmountHolidayNightX3),
+    totalNightHours: Math.round(totalNightHours * 10) / 10,
+    nightShiftAllowance: Math.round(nightShiftAllowance),
 
     workedSundaysCount,
     sundayAllowance,
@@ -427,3 +335,4 @@ export const calculatePayroll = (
     personalRelief, dependentRelief
   };
 };
+
